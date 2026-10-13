@@ -271,8 +271,62 @@ METAL_FUNC void k4_qmv_fast_impl(
 
 // END core
 
+// Batched projection reuses each decoded K4 value across token rows.
+// Decoder helpers come from the licensed production dense_k4_decode header.
+template <short ROWS>
+METAL_FUNC void k4_shared_rows(
+    const device uint* weights, const device uchar* scales,
+    const device float* x, device float* out,
+    uint3 group, uint simd_group, uint lane) {
+    using value = vec<float, ROWS>;
+    constexpr int VALUES = 8;
+    uint first = group.y * 8u + simd_group * 4u;
+    value result[4] = {value(0.0f), value(0.0f), value(0.0f), value(0.0f)};
+    for (uint block = 0u; block < INPUT_K; block += 256u) {
+        value activation[VALUES];
+        uint input = block + lane * VALUES;
+        #pragma unroll
+        for (short i = 0; i < VALUES; i++) {
+            #pragma unroll
+            for (short row = 0; row < ROWS; row++) {
+                activation[i][row] = x[uint(row) * INPUT_K + input + uint(i)];
+            }
+        }
+        #pragma unroll
+        for (short column = 0; column < 4; column++) {
+            value dot(0.0f);
+            #pragma unroll
+            for (short i = 0; i < VALUES; i++) {
+                float weight = k4_fetch(weights, first + uint(column), input + uint(i));
+                dot += activation[i] * weight;
+            }
+            float scale = 1.0f;
+            if constexpr (K4_SIDE == 1) {
+                scale = dequantize_scale<float, 32>(scales[(first + uint(column)) * (INPUT_K / 32) + block / 32u + lane / 4u]);
+            }
+            result[column] += scale * dot;
+        }
+    }
+    #pragma unroll
+    for (short column = 0; column < 4; column++) {
+        value sum = simd_sum(result[column]);
+        if (lane == 0u) {
+            #pragma unroll
+            for (short row = 0; row < ROWS; row++) {
+                out[uint(row) * OUTPUT_N + first + uint(column)] = sum[row];
+            }
+        }
+    }
+}
+
 // KERNEL_ENTRY
+if constexpr (BATCH_ROWS == 1) {
   k4_qmv_fast_impl<float, 32, 8, false, 4>(
       weights, scales, nullptr, xh, out, INPUT_K, OUTPUT_N,
       threadgroup_position_in_grid, simdgroup_index_in_threadgroup,
       thread_index_in_simdgroup);
+} else {
+  k4_shared_rows<BATCH_ROWS>(weights, scales, xh, out,
+      threadgroup_position_in_grid, simdgroup_index_in_threadgroup,
+      thread_index_in_simdgroup);
+}

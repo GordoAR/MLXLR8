@@ -1,0 +1,587 @@
+{
+  "status": "mtp_settings_retained_and_benchmark_complete",
+  "test_profile": {
+    "hardware": "Apple M3 Ultra",
+    "model": "GLM-5.3 EXLR8 up1",
+    "resident": true,
+    "temperature": 0,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048,
+    "memory_limit_gib": 440,
+    "first_prompt_tokens": 23861,
+    "first_prompt_cached_tokens": 23860,
+    "followup_new_tokens": 4469,
+    "completion_tokens_per_request": 512,
+    "fresh_processes": 6,
+    "runs_per_mode": 2,
+    "order": [
+      "production",
+      "mtp1",
+      "mtp3",
+      "mtp3",
+      "mtp1",
+      "production"
+    ]
+  },
+  "changes": [
+    "Keep resident production optimization settings enabled with MTP.",
+    "Use production prefill input sizes, with the final prompt token in a one-token call.",
+    "Keep batched verification and the existing kernel input-size checks."
+  ],
+  "optimization_profile": {
+    "retained_dense_k4": 151,
+    "fused_rms_layers": 78,
+    "attention_lookup_layers": 78,
+    "batch_shape_fallbacks_preserved": true
+  },
+  "results": {
+    "mtp1": {
+      "requests": {
+        "first": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.175828625506256,
+                "mtp": 45.23885129100381
+              },
+              "ratio_of_medians_time_cut_percent": -21.688884857742032,
+              "paired_time_cut_percent": [
+                -21.730582891817217,
+                -21.647163395577262
+              ],
+              "median_decode_tps": {
+                "production": 13.745491605652145,
+                "mtp": 11.295605085806402
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 0.14896922899788478,
+                "mtp": 0.11294291699596215
+              },
+              "ratio_of_medians_time_cut_percent": 24.183727232980555,
+              "paired_time_cut_percent": [
+                21.531247422526924,
+                26.828125999298745
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 37.32479785450414,
+                "mtp": 45.351794207999774
+              },
+              "ratio_of_medians_time_cut_percent": -21.50579993704369,
+              "paired_time_cut_percent": [
+                -21.558228602246785,
+                -21.45334257116478
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 1,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 4,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 366.96456731669605,
+            "mtp": 371.26925619132817
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 210,
+              "proposed_draft_tokens": 301,
+              "verification_cycles": 301,
+              "draft_acceptance": 0.6976744186046512,
+              "acceptance_by_depth": [
+                0.6976744186046512
+              ],
+              "draft_seconds": 1.2492945058475016,
+              "verify_seconds": 43.23259283103107,
+              "draft_cache_sync_seconds": 0.6631356229627272,
+              "cache_finalize_seconds": 0.08282620798854623
+            },
+            {
+              "accepted_draft_tokens": 210,
+              "proposed_draft_tokens": 301,
+              "verification_cycles": 301,
+              "draft_acceptance": 0.6976744186046512,
+              "acceptance_by_depth": [
+                0.6976744186046512
+              ],
+              "draft_seconds": 1.2753285429789685,
+              "verify_seconds": 43.19361625201418,
+              "draft_cache_sync_seconds": 0.6207045807823306,
+              "cache_finalize_seconds": 0.08303208299912512
+            }
+          ]
+        },
+        "followup": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.447853645993746,
+                "mtp": 38.72718172948953
+              },
+              "ratio_of_medians_time_cut_percent": -3.416292147447675,
+              "paired_time_cut_percent": [
+                -3.437633994289113,
+                -3.3949707024765186
+              ],
+              "median_decode_tps": {
+                "production": 13.645644999763478,
+                "mtp": 13.194867660592294
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 40.81289610400563,
+                "mtp": 41.36862264550291
+              },
+              "ratio_of_medians_time_cut_percent": -1.3616444666928018,
+              "paired_time_cut_percent": [
+                -1.3353787611628087,
+                -1.3879140524221345
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 78.26074974999938,
+                "mtp": 80.09580437499244
+              },
+              "ratio_of_medians_time_cut_percent": -2.344795610641426,
+              "paired_time_cut_percent": [
+                -2.3410205061794587,
+                -2.3485692785337964
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 1,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 357,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 4,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 357,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 382.9619736280292,
+            "mtp": 387.266612932086
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 256,
+              "proposed_draft_tokens": 256,
+              "verification_cycles": 256,
+              "draft_acceptance": 1.0,
+              "acceptance_by_depth": [
+                1.0
+              ],
+              "draft_seconds": 1.0875229560188018,
+              "verify_seconds": 36.99292859293928,
+              "draft_cache_sync_seconds": 0.6079852940456476,
+              "cache_finalize_seconds": 1.3749959180131555e-06
+            },
+            {
+              "accepted_draft_tokens": 256,
+              "proposed_draft_tokens": 256,
+              "verification_cycles": 256,
+              "draft_acceptance": 1.0,
+              "acceptance_by_depth": [
+                1.0
+              ],
+              "draft_seconds": 1.093815213040216,
+              "verify_seconds": 37.00969565717969,
+              "draft_cache_sync_seconds": 0.6063479920849204,
+              "cache_finalize_seconds": 1.45800004247576e-06
+            }
+          ]
+        }
+      },
+      "all_required_exact": false
+    },
+    "mtp3": {
+      "requests": {
+        "first": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.175828625506256,
+                "mtp": 52.41298918749817
+              },
+              "ratio_of_medians_time_cut_percent": -40.98674091567587,
+              "paired_time_cut_percent": [
+                -40.98021343337839,
+                -40.99327206544696
+              ],
+              "median_decode_tps": {
+                "production": 13.745491605652145,
+                "mtp": 9.749492177987186
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 0.14896922899788478,
+                "mtp": 0.1094364794989815
+              },
+              "ratio_of_medians_time_cut_percent": 26.53752708854029,
+              "paired_time_cut_percent": [
+                26.50258106399899,
+                26.572366646534483
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 37.32479785450414,
+                "mtp": 52.52242566699715
+              },
+              "ratio_of_medians_time_cut_percent": -40.7172407784629,
+              "paired_time_cut_percent": [
+                -40.711363294137605,
+                -40.723121480260424
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 2,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 3,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 366.96456731669605,
+            "mtp": 371.50796862505376
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 296,
+              "proposed_draft_tokens": 646,
+              "verification_cycles": 216,
+              "draft_acceptance": 0.4582043343653251,
+              "acceptance_by_depth": [
+                0.6805555555555556,
+                0.44651162790697674,
+                0.24651162790697675
+              ],
+              "draft_seconds": 2.749949659992126,
+              "verify_seconds": 49.11190555001667,
+              "draft_cache_sync_seconds": 0.5241759592172457,
+              "cache_finalize_seconds": 1.3329990906640887e-06
+            },
+            {
+              "accepted_draft_tokens": 296,
+              "proposed_draft_tokens": 646,
+              "verification_cycles": 216,
+              "draft_acceptance": 0.4582043343653251,
+              "acceptance_by_depth": [
+                0.6805555555555556,
+                0.44651162790697674,
+                0.24651162790697675
+              ],
+              "draft_seconds": 2.7219224669825053,
+              "verify_seconds": 49.13247961997695,
+              "draft_cache_sync_seconds": 0.5072709190280875,
+              "cache_finalize_seconds": 1.2920063454657793e-06
+            }
+          ]
+        },
+        "followup": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.447853645993746,
+                "mtp": 31.952759145999153
+              },
+              "ratio_of_medians_time_cut_percent": 14.67399053612375,
+              "paired_time_cut_percent": [
+                14.610001882981294,
+                14.737918018918128
+              ],
+              "median_decode_tps": {
+                "production": 13.645644999763478,
+                "mtp": 15.992360324657728
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 40.81289610400563,
+                "mtp": 41.382906853999884
+              },
+              "ratio_of_medians_time_cut_percent": -1.3966437190383818,
+              "paired_time_cut_percent": [
+                -1.3942371394385367,
+                -1.3990506541591508
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 78.26074974999938,
+                "mtp": 73.33566599999904
+              },
+              "ratio_of_medians_time_cut_percent": 6.293172204116759,
+              "paired_time_cut_percent": [
+                6.261603409587179,
+                6.324728985529571
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 2,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 357,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 3,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 357,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 382.9619736280292,
+            "mtp": 387.2666224837303
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 381,
+              "proposed_draft_tokens": 390,
+              "verification_cycles": 130,
+              "draft_acceptance": 0.9769230769230769,
+              "acceptance_by_depth": [
+                1.0,
+                0.9769230769230769,
+                0.9538461538461539
+              ],
+              "draft_seconds": 1.685341168078594,
+              "verify_seconds": 29.80358408576285,
+              "draft_cache_sync_seconds": 0.367611962967203,
+              "cache_finalize_seconds": 0.08352633300819434
+            },
+            {
+              "accepted_draft_tokens": 381,
+              "proposed_draft_tokens": 390,
+              "verification_cycles": 130,
+              "draft_acceptance": 0.9769230769230769,
+              "acceptance_by_depth": [
+                1.0,
+                0.9769230769230769,
+                0.9538461538461539
+              ],
+              "draft_seconds": 1.6853099269064842,
+              "verify_seconds": 29.798285377095453,
+              "draft_cache_sync_seconds": 0.3570892479910981,
+              "cache_finalize_seconds": 0.08287529100198299
+            }
+          ]
+        }
+      },
+      "all_required_exact": false
+    }
+  },
+  "quality_review": {
+    "method": "Manual review of full decoded samples against the input source and production samples.",
+    "mtp_requests_reviewed": 8,
+    "requests": [
+      {
+        "request": "first",
+        "assessment": "Similar review topic, with a factual accuracy regression.",
+        "findings": [
+          "Both replies review ExpertStore and identify load, copy, and device synchronization costs.",
+          "The MTP reply calls the main weights 1.58-bit. The input source selects K4 for main experts and K3 for layer 78.",
+          "This is a factual error in the MTP sample. The production sample states the correct K4 and K3 distinction."
+        ]
+      },
+      {
+        "request": "followup",
+        "assessment": "Similar code continuation, with different and more complete helper logic in the MTP sample.",
+        "findings": [
+          "The first 357 output tokens match. The initial kernel helper functions are unchanged.",
+          "The MTP continuation adds side-vector checks and defines per_slot, ids, xh, splits, and inner in fast_expert_linear.",
+          "The production continuation omits these local definitions before its return statement.",
+          "Both samples stop at the 512-token limit. The complete generated program was not tested."
+        ]
+      }
+    ]
+  },
+  "acceptance_policy": {
+    "exactness_required": false,
+    "fixed_quality_or_speed_threshold": null
+  },
+  "validation": {
+    "full_requests_verified": 12,
+    "current_production_controls_exact": true,
+    "model_file_identities_verified": 236,
+    "all_values_finite": true,
+    "portable_tests_passed": 590,
+    "portable_tests_skipped": 9,
+    "portable_subtests_passed": 23,
+    "separate_agent_review": false
+  },
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "71b7c641c079861f6624fbcd52a679c4d66606201dab8c3ecc902bbdfda1bd11",
+    "exlr8/dense.py": "f331e8951562d65b800145f0085043d0d809f12c730222cfed5b5db475d28134",
+    "exlr8/dense_trellis.py": "06babc705a6aa328367b21fd8ba60694bb60fad7ca672adb502f40939fab4306",
+    "exlr8/dsa_indexed.py": "6a93f7662869cc4166753ec5303f248befb6f65eab42fca2339965f43be67bb8",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "2a14f49a6512016382190bae3444e6a74a40c24f1c0f8daa8a28ad8264ee8671",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "5455c463ab1d174729f59470a8fb28e8b80a39fc711956665ee9fad98a93d092",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/model.py": "7ebcb1fdcf7a2109e6293c9167481ca3ea6a6395f5685497799c81b6ee9ecb2f",
+    "exlr8/mtp.py": "4532dc04721eb1900452735a47c53f7c862093b7bfd2f669bfb654377d46e73a",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "93b3a09c884a3d04e1f0335ad50a0b2744c63245f1037503335203b134b23fb4",
+    "exlr8/metal/dsa_indexed_decode.metal": "07513916a3ffdd17a298da317a6a5b6fe23b95c85178099e582695742c6a4bd5",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba",
+    "exlr8/kv_lookup.py": "2d09e42587b7c0c3dd2b7f8d0f351493e7b5630876271559cde64901cda06094",
+    "exlr8/metal/kv_lookup.metal": "88af8af56ffba8c278a34cf71a2d47d77b27e711097c00f4363f8f449f57055f",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/fast_norm.py": "4fab0fe7bfd288a59716d7036d9afea8140b7de9315fe3602ea5db1f063bfc71",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe"
+  },
+  "local_evidence_sha256": {
+    "comparison": "9238177473e38ad9d25fa5b841e863ffceede45c5bfd74bffc665cbb4cda0083",
+    "validation": "0fd1132627a55198f4bfdfe9a916b71042a7410813fc3c5d4330372d24f17086",
+    "quality_review": "27f4a71934205724459736d11479089af3c75f079bc05a85529fa87617be7dfa"
+  },
+  "notes": [
+    "The first prompt cache and follow-up reply cache are shared between modes.",
+    "Preparation, cache loading, and fingerprint checks are outside the speed intervals.",
+    "The follow-up speed gain does not compensate for the slower first reply in the combined two-request sample.",
+    "Both MTP settings produce the same sampled text. The review includes a wrong 1.58-bit claim for K4 main experts.",
+    "MTP stays optional and off by default."
+  ]
+}

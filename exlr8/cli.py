@@ -34,7 +34,7 @@ def load_runtime(args):
             print(f"Loaded dense layers: {done}/{total}", file=sys.stderr, flush=True)
     model = load_model(args.model, store, progress=progress, optimize=optimize,
                        indexed_prefill=getattr(args, "indexed_prefill", True),
-                       decode_k4=optimize and store.resident and not getattr(args, "mtp", False))
+                       decode_k4=optimize and store.resident)
     config = json.loads((Path(args.model) / "config.json").read_text())
     tokenizer = load_tokenizer(Path(args.model), eos_token_ids=config["eos_token_id"])
     mx.eval(model.parameters())

@@ -118,7 +118,7 @@ Client settings: base URL `http://127.0.0.1:8081/v1`, model `glm-5.3-exlr8-up1`.
 
 EXLR8 selects `MLX_MAX_OPS_PER_BUFFER=100` before MLX loads. An explicit value takes precedence. The commands above select `MLX_MAX_MB_PER_BUFFER=2048`; MLX counts array elements for this setting despite its name.
 
-Resident mode without MTP enables the retained dense K4 path. Residual-add/RMS fusion uses the verified M3 Ultra, one-row BF16, 6,144-channel profile. Other calls use the native pair. `--no-optimize` selects the reference operators for diagnosis. MTP is optional and has separate behavior and memory use.
+Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. The requested draft count is a maximum. MTP measures cost and can stop proposals. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
 
@@ -131,7 +131,7 @@ EXLR8_TEST_METAL=1 python -m pytest -q
 
 The repository includes PonyExl3's small CPU reference files for these tests. Tests that need private captured tensors skip when those fixtures are absent. No model download is needed for the portable tests.
 
-The clean release environment passed 582 tests and 23 subtests. Nine tests were skipped. The installed package also passed normal and streamed chat requests with the local up1 model.
+The current code passed 621 tests and 23 subtests with Metal tests enabled. Nine tests were skipped. The clean release package also passed normal and streamed chat requests with the local up1 model.
 
 The combined production test used two reversed pairs. Each process generated 512 outputs from a saved 23,861-token prefix, then 512 outputs after the same 4,469 new input tokens.
 
@@ -142,7 +142,23 @@ The combined production test used two reversed pairs. Each process generated 512
 
 Both pairs were faster. All eight requests matched tokens, text, full log probabilities, and allocated cache values exactly. Total follow-up time fell by 1.17%. Follow-up peak memory increased by 2.56 GiB to 385.26 GiB. These figures describe this test; speed depends on hardware, prompt, and context. Exactness is relative to the previous EXLR8 runtime using the same quantized weights.
 
-See [benchmark data](docs/benchmark-results.json). For a new resident benchmark with your own input:
+The MTP tuning test completed one normal-generation control and two fresh processes per MTP limit. Each reply used 512 output tokens. The final control was stopped at the user's request. All runs used the same cached prompt and follow-up input. Target row counts were compiled before timing.
+
+| Mode | First reply tokens/s | Follow-up tokens/s | Total follow-up seconds |
+|---|---:|---:|---:|
+| Production | 13.78 | 13.67 | 78.22 |
+| MTP, draft limit one | 13.50 | 15.63 | 74.12 |
+| MTP, draft limit three | 12.05 | 18.10 | 69.64 |
+
+Dense K4 batches now share weight reads. Small batches use the compiled fused expert result step and direct indexed sparse attention. MTP compares measured cost per committed token and stops drafting when it costs more.
+
+Against the preceding batched suite, the one-token limit increased first-reply speed by 22.0% and follow-up speed by 19.6%. The three-token limit increased these speeds by 29.9% and 17.5%. Its combined first-reply and follow-up time fell by 13.5%. The old and new suites were separate; the completed normal control stayed close to the old speeds. Against that new control, combined request time fell by 2.9%. Normal generation remains faster for the first reply, so MTP stays optional and off by default.
+
+All eight MTP answers were reviewed against the input code. The model's earlier bit-width, cache-removal, and generated launch-size errors were absent. The code helper had the required local definitions. All replies stopped at 512 tokens. The follow-up still continued incomplete code instead of giving the requested test explanation. The generated program was not executed. These two tasks do not establish quality for other tasks.
+
+The portable release passed 669 tests and 23 subtests; nine tests were skipped because private fixtures are absent. Both installed environments match all 45 tested runtime files. Model files and dependency versions are unchanged.
+
+See [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 
 ```sh
 MLX_MAX_MB_PER_BUFFER=2048 MLX_MAX_OPS_PER_BUFFER=100 python tools/benchmark_runtime.py \

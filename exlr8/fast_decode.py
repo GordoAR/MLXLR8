@@ -222,7 +222,7 @@ def fast_expert_mlp(x, indices, packed, scales, k, hidden, intermediate, *, reus
 
 
 def compiled_expert_mlp_finish(expert):
-    """Compile normalized Q1 K4 inputs with eight routed experts and one shared expert.
+    """Compile one to four K4 rows with eight routed experts and one shared expert.
 
     Return the typed routed sum, shared sum, and residual sum. RMS, routing,
     attention, and cache updates stay outside the compiled call.
@@ -234,8 +234,9 @@ def compiled_expert_mlp_finish(expert):
 
     def apply(x, indices, scores, residual):
         shape = residual.shape
-        return _expert_mlp(x.reshape(1, h), indices.reshape(1, 9), expert.packed, expert.scales,
+        rows = x.size // h
+        return _expert_mlp(x.reshape(rows, h), indices.reshape(rows, 9), expert.packed, expert.scales,
                            4, h, m, (splits, 4, 1, 4, True, True, True), direct_x=True,
-                           scores=scores.reshape(1, 8), residual=residual.reshape(1, h)).reshape(shape)
+                           scores=scores.reshape(rows, 8), residual=residual.reshape(rows, h)).reshape(shape)
 
     return mx.compile(apply)

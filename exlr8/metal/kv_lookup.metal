@@ -477,9 +477,11 @@ struct KV_GEMVTKernel {
 // KERNEL_ENTRY
 // Copyright © 2023-2024 Apple Inc. Native GEMV arithmetic is supplied by the header.
 const uint head = threadgroup_position_in_grid.z;
-const device bfloat16_t* vector = x + head * INPUT_STRIDE;
+const uint token = threadgroup_position_in_grid.y;
+const uint row = head * TOKENS_PER_HEAD + token;
+const device bfloat16_t* vector = x + row * INPUT_STRIDE;
 const device WEIGHT_TYPE* matrix = weights + head * OUTPUT_ROWS * 512;
-device bfloat16_t* output = out + head * OUTPUT_SIZE;
+device bfloat16_t* output = out + row * OUTPUT_SIZE;
 threadgroup float unused[1];
 #if KEY_PROJECTION
 using Op = KV_GEMVTKernel<bfloat16_t, 1, 4, 8, 4, 4, 4, false>;

@@ -1,0 +1,675 @@
+{
+  "status": "batched_mtp_kernel_support_tested",
+  "test_profile": {
+    "hardware": "Apple M3 Ultra",
+    "model": "GLM-5.3 EXLR8 up1",
+    "resident": true,
+    "temperature": 0,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048,
+    "memory_limit_gib": 440,
+    "first_prompt_tokens": 23861,
+    "first_prompt_cached_tokens": 23860,
+    "followup_new_tokens": 4469,
+    "completion_tokens_per_request": 512,
+    "fresh_processes": 6,
+    "runs_per_mode": 2,
+    "order": [
+      "production",
+      "mtp1",
+      "mtp3",
+      "mtp3",
+      "mtp1",
+      "production"
+    ],
+    "target_row_shapes_compiled_outside_timing": true
+  },
+  "changes": [
+    "Dense K4 projections, residual-add/RMS, and attention lookup support one to four token rows in a batch of one.",
+    "The one- and three-draft-token MTP modes use these kernels during target verification.",
+    "Larger token batches use the existing paths."
+  ],
+  "optimization_profile": {
+    "retained_dense_k4": 151,
+    "fused_rms_layers": 78,
+    "attention_lookup_layers": 78,
+    "batched_kernel_rows": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "results": {
+    "mtp1": {
+      "requests": {
+        "first": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.07516662499984,
+                "mtp": 46.20452510400355
+              },
+              "ratio_of_medians_time_cut_percent": -24.623917597845058,
+              "paired_time_cut_percent": [
+                -25.023058769849538,
+                -24.227230132128884
+              ],
+              "median_decode_tps": {
+                "production": 13.782941635102457,
+                "mtp": 11.059522957915718
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 0.14928652100206818,
+                "mtp": 0.10893268749350682
+              },
+              "ratio_of_medians_time_cut_percent": 27.0311299624983,
+              "paired_time_cut_percent": [
+                27.1499150395583,
+                26.912085707727694
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 37.224453146001906,
+                "mtp": 46.31345779149706
+              },
+              "ratio_of_medians_time_cut_percent": -24.416758010779162,
+              "paired_time_cut_percent": [
+                -24.812949757148782,
+                -24.022988659476052
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 1,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 4,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 366.9308516550809,
+            "mtp": 371.23988579027355
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 207,
+              "proposed_draft_tokens": 305,
+              "verification_cycles": 305,
+              "draft_acceptance": 0.6786885245901639,
+              "acceptance_by_depth": [
+                0.6786885245901639
+              ],
+              "draft_seconds": 1.293500900908839,
+              "verify_seconds": 44.20367787707073,
+              "draft_cache_sync_seconds": 0.6731855379912304,
+              "cache_finalize_seconds": 1.2499949662014842e-06
+            },
+            {
+              "accepted_draft_tokens": 207,
+              "proposed_draft_tokens": 305,
+              "verification_cycles": 305,
+              "draft_acceptance": 0.6786885245901639,
+              "acceptance_by_depth": [
+                0.6786885245901639
+              ],
+              "draft_seconds": 1.2998107490711845,
+              "verify_seconds": 44.188493003093754,
+              "draft_cache_sync_seconds": 0.6724746597610647,
+              "cache_finalize_seconds": 1.5419936971738935e-06
+            }
+          ]
+        },
+        "followup": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.431424312497256,
+                "mtp": 39.11997237500327
+              },
+              "ratio_of_medians_time_cut_percent": -4.511044112051743,
+              "paired_time_cut_percent": [
+                -4.524003644772767,
+                -4.498111950573591
+              ],
+              "median_decode_tps": {
+                "production": 13.65164645630578,
+                "mtp": 13.062392789607468
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 41.031551125008264,
+                "mtp": 41.38495072949445
+              },
+              "ratio_of_medians_time_cut_percent": -0.8612874600073095,
+              "paired_time_cut_percent": [
+                -0.3928740721265367,
+                -1.334155416388727
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 78.46297543750552,
+                "mtp": 80.50492310449772
+              },
+              "ratio_of_medians_time_cut_percent": -2.6024346586481117,
+              "paired_time_cut_percent": [
+                -2.3577092134506206,
+                -2.848126459430711
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 1,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 234,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 4,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 234,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 382.96197244524956,
+            "mtp": 387.26680437475443
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 256,
+              "proposed_draft_tokens": 256,
+              "verification_cycles": 256,
+              "draft_acceptance": 1.0,
+              "acceptance_by_depth": [
+                1.0
+              ],
+              "draft_seconds": 1.099307870172197,
+              "verify_seconds": 37.33016274096735,
+              "draft_cache_sync_seconds": 0.6257430759869749,
+              "cache_finalize_seconds": 1.6660051187500358e-06
+            },
+            {
+              "accepted_draft_tokens": 256,
+              "proposed_draft_tokens": 256,
+              "verification_cycles": 256,
+              "draft_acceptance": 1.0,
+              "acceptance_by_depth": [
+                1.0
+              ],
+              "draft_seconds": 1.1038707531406544,
+              "verify_seconds": 37.39403263096756,
+              "draft_cache_sync_seconds": 0.6296325872535817,
+              "cache_finalize_seconds": 1.3329990906640887e-06
+            }
+          ]
+        }
+      },
+      "all_required_exact": false
+    },
+    "mtp3": {
+      "requests": {
+        "first": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.07516662499984,
+                "mtp": 55.11064577099751
+              },
+              "ratio_of_medians_time_cut_percent": -48.64571298739981,
+              "paired_time_cut_percent": [
+                -49.114896664197325,
+                -48.17941360072038
+              ],
+              "median_decode_tps": {
+                "production": 13.782941635102457,
+                "mtp": 9.272255748561893
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 0.14928652100206818,
+                "mtp": 0.10791499949846184
+              },
+              "ratio_of_medians_time_cut_percent": 27.712831155756646,
+              "paired_time_cut_percent": [
+                28.359885988141897,
+                27.064364511431393
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 37.224453146001906,
+                "mtp": 55.21856077049597
+              },
+              "ratio_of_medians_time_cut_percent": -48.339481453004815,
+              "paired_time_cut_percent": [
+                -48.80289317074584,
+                -47.87890312659293
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 2,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 3,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 40,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 366.9308516550809,
+            "mtp": 371.39808954671025
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 292,
+              "proposed_draft_tokens": 657,
+              "verification_cycles": 220,
+              "draft_acceptance": 0.4444444444444444,
+              "acceptance_by_depth": [
+                0.6727272727272727,
+                0.4246575342465753,
+                0.23394495412844038
+              ],
+              "draft_seconds": 2.7566315490112174,
+              "verify_seconds": 51.792677086094045,
+              "draft_cache_sync_seconds": 0.5246591699396959,
+              "cache_finalize_seconds": 8.330098353326321e-07
+            },
+            {
+              "accepted_draft_tokens": 292,
+              "proposed_draft_tokens": 657,
+              "verification_cycles": 220,
+              "draft_acceptance": 0.4444444444444444,
+              "acceptance_by_depth": [
+                0.6727272727272727,
+                0.4246575342465753,
+                0.23394495412844038
+              ],
+              "draft_seconds": 2.7680885069130454,
+              "verify_seconds": 51.768092497077305,
+              "draft_cache_sync_seconds": 0.5299054579663789,
+              "cache_finalize_seconds": 1.00000761449337e-06
+            }
+          ]
+        },
+        "followup": {
+          "measurements": {
+            "decode_seconds": {
+              "median_seconds": {
+                "production": 37.431424312497256,
+                "mtp": 33.17910010399646
+              },
+              "ratio_of_medians_time_cut_percent": 11.360305643194746,
+              "paired_time_cut_percent": [
+                11.309020698708249,
+                11.411482271069751
+              ],
+              "median_decode_tps": {
+                "production": 13.65164645630578,
+                "mtp": 15.40126512562846
+              }
+            },
+            "prefill_seconds": {
+              "median_seconds": {
+                "production": 41.031551125008264,
+                "mtp": 41.34280041650345
+              },
+              "ratio_of_medians_time_cut_percent": -0.7585608707477931,
+              "paired_time_cut_percent": [
+                -0.2644310275612627,
+                -1.2573898435741526
+              ]
+            },
+            "elapsed_seconds": {
+              "median_seconds": {
+                "production": 78.46297543750552,
+                "mtp": 74.52190052049991
+              },
+              "ratio_of_medians_time_cut_percent": 5.022846629292832,
+              "paired_time_cut_percent": [
+                5.240098486294187,
+                4.804736902586837
+              ]
+            }
+          },
+          "exactness": [
+            {
+              "run": 2,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 234,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            },
+            {
+              "run": 3,
+              "tokens_exact": false,
+              "text_exact": false,
+              "full_log_probabilities_exact": false,
+              "committed_target_cache_exact": false,
+              "offsets_exact": true,
+              "first_token_mismatch_index": 234,
+              "log_probability_vectors_exact": 1,
+              "first_log_probability_mismatch_index": 1,
+              "allocated_target_cache_exact": false,
+              "all_required_exact": false
+            }
+          ],
+          "all_required_exact": false,
+          "completion_tokens": [
+            512,
+            512,
+            512,
+            512
+          ],
+          "median_peak_gib": {
+            "production": 382.96197244524956,
+            "mtp": 387.2669850476086
+          },
+          "mtp_statistics": [
+            {
+              "accepted_draft_tokens": 381,
+              "proposed_draft_tokens": 393,
+              "verification_cycles": 131,
+              "draft_acceptance": 0.9694656488549618,
+              "acceptance_by_depth": [
+                1.0,
+                0.9694656488549618,
+                0.9389312977099237
+              ],
+              "draft_seconds": 1.699138414929621,
+              "verify_seconds": 31.083979748102138,
+              "draft_cache_sync_seconds": 0.35869167603959795,
+              "cache_finalize_seconds": 1.167005393654108e-06
+            },
+            {
+              "accepted_draft_tokens": 381,
+              "proposed_draft_tokens": 393,
+              "verification_cycles": 131,
+              "draft_acceptance": 0.9694656488549618,
+              "acceptance_by_depth": [
+                1.0,
+                0.9694656488549618,
+                0.9389312977099237
+              ],
+              "draft_seconds": 1.7143322530027945,
+              "verify_seconds": 31.094536043980042,
+              "draft_cache_sync_seconds": 0.36375062889419496,
+              "cache_finalize_seconds": 1.4999968698248267e-06
+            }
+          ]
+        }
+      },
+      "all_required_exact": false
+    }
+  },
+  "combined_requests": {
+    "mtp1": {
+      "production_total_seconds": 115.68742858350743,
+      "mtp_total_seconds": 126.81838089599478,
+      "total_time_cut_percent": -9.621574659214271
+    },
+    "mtp3": {
+      "production_total_seconds": 115.68742858350743,
+      "mtp_total_seconds": 129.74046129099588,
+      "total_time_cut_percent": -12.147415565853347
+    }
+  },
+  "previous_mtp_comparison": {
+    "production": {
+      "first": {
+        "previous_median_decode_tps": 13.745491605652145,
+        "current_median_decode_tps": 13.782941635102457,
+        "decode_tps_change_percent": 0.27245318337623115,
+        "previous_median_elapsed_seconds": 37.32479785450414,
+        "current_median_elapsed_seconds": 37.224453146001906,
+        "total_time_cut_percent": 0.2688419342373627,
+        "tokens_unchanged_in_both_repeats": true
+      },
+      "followup": {
+        "previous_median_decode_tps": 13.645644999763478,
+        "current_median_decode_tps": 13.65164645630578,
+        "decode_tps_change_percent": 0.04398074654885509,
+        "previous_median_elapsed_seconds": 78.26074974999938,
+        "current_median_elapsed_seconds": 78.46297543750552,
+        "total_time_cut_percent": -0.2583998851942271,
+        "tokens_unchanged_in_both_repeats": true
+      }
+    },
+    "mtp1": {
+      "first": {
+        "previous_median_decode_tps": 11.295605085806402,
+        "current_median_decode_tps": 11.059522957915718,
+        "decode_tps_change_percent": -2.0900352490840546,
+        "previous_median_elapsed_seconds": 45.351794207999774,
+        "current_median_elapsed_seconds": 46.31345779149706,
+        "total_time_cut_percent": -2.120453226363539,
+        "tokens_unchanged_in_both_repeats": false
+      },
+      "followup": {
+        "previous_median_decode_tps": 13.194867660592294,
+        "current_median_decode_tps": 13.062392789607468,
+        "decode_tps_change_percent": -1.0039878715909722,
+        "previous_median_elapsed_seconds": 80.09580437499244,
+        "current_median_elapsed_seconds": 80.50492310449772,
+        "total_time_cut_percent": -0.510786716854561,
+        "tokens_unchanged_in_both_repeats": false
+      }
+    },
+    "mtp3": {
+      "first": {
+        "previous_median_decode_tps": 9.749492177987186,
+        "current_median_decode_tps": 9.272255748561893,
+        "decode_tps_change_percent": -4.894987561534925,
+        "previous_median_elapsed_seconds": 52.52242566699715,
+        "current_median_elapsed_seconds": 55.21856077049597,
+        "total_time_cut_percent": -5.133302716429866,
+        "tokens_unchanged_in_both_repeats": false
+      },
+      "followup": {
+        "previous_median_decode_tps": 15.992360324657728,
+        "current_median_decode_tps": 15.40126512562846,
+        "decode_tps_change_percent": -3.6961098113696966,
+        "previous_median_elapsed_seconds": 73.33566599999904,
+        "current_median_elapsed_seconds": 74.52190052049991,
+        "total_time_cut_percent": -1.6175410754446506,
+        "tokens_unchanged_in_both_repeats": false
+      }
+    }
+  },
+  "quality": {
+    "review_method": "Manual source comparison of both full 512-token outputs, followed by token and decoded-text checks for every repeat.",
+    "mtp_requests_reviewed": 8,
+    "distinct_outputs": 2,
+    "first_review": {
+      "topic_and_main_performance_concerns_retained": true,
+      "observed_errors": [
+        {
+          "claim": "The main expert weights are 1.58-bit.",
+          "source_fact": "The provided source selects K4 for main layers and K3 for the retained MTP layer."
+        },
+        {
+          "claim": "An expert larger than the cache limit flushes the existing cache before it is not stored.",
+          "source_fact": "The eviction loop is inside the size <= limit branch. A too-large entry does not evict the existing entries."
+        }
+      ],
+      "comparison": "The bit-width error remains. The false cache-removal claim is new. Both MTP modes are less factually accurate than the production control on this sample."
+    },
+    "followup": {
+      "common_prefix_tokens_with_production": 234,
+      "observed_changes": [
+        "The continuation defines per_slot, ids, xh, splits, and inner in fast_expert_linear; the production continuation omits these definitions.",
+        "The continuation changes the fused-finish grid to features // 288. The reference requires features // 128 * 288, so output coverage is incorrect."
+      ],
+      "launch_threads_at_6144_channels": {
+        "reference": 13824,
+        "mtp_continuation": 21
+      },
+      "comparison": "The helper body is more complete than the production continuation, but the new launch-size error prevents a claim of correct generated code."
+    },
+    "limits": [
+      "These are two source-based tasks at temperature zero. Every output stops at 512 tokens.",
+      "The follow-up input stops inside _prep. Both production and MTP continue the code instead of giving the requested explanation.",
+      "Generated code was inspected as data and was not executed. The code continuation is incomplete.",
+      "The samples do not establish quality for other tasks or longer answers."
+    ],
+    "overall_assessment": "The topic stays close, but specific factual claims and generated code are less reliable. Exact-token differences alone are not the acceptance decision."
+  },
+  "exactness_required": false,
+  "fixed_quality_or_speed_threshold": null,
+  "mtp_default_enabled": false,
+  "test_validation": {
+    "release_passed": 621,
+    "release_skipped": 9,
+    "workspace_passed": 629,
+    "workspace_skipped": 1,
+    "subtests_passed": 23
+  },
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "71b7c641c079861f6624fbcd52a679c4d66606201dab8c3ecc902bbdfda1bd11",
+    "exlr8/dense.py": "2e0e55830163de87947f3d514ed81451845e39332228b5f9a204b12d9a205792",
+    "exlr8/dense_trellis.py": "30d06eb24680889e58f083050df302905408d7d14888d3590b8d391e4824ea9d",
+    "exlr8/dsa_indexed.py": "6a93f7662869cc4166753ec5303f248befb6f65eab42fca2339965f43be67bb8",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "2a14f49a6512016382190bae3444e6a74a40c24f1c0f8daa8a28ad8264ee8671",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "5455c463ab1d174729f59470a8fb28e8b80a39fc711956665ee9fad98a93d092",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/model.py": "6ab89ce4367027a8293bb8cee365282b065b53829c79ea7f347f9a7429dcb182",
+    "exlr8/mtp.py": "4532dc04721eb1900452735a47c53f7c862093b7bfd2f669bfb654377d46e73a",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "93b3a09c884a3d04e1f0335ad50a0b2744c63245f1037503335203b134b23fb4",
+    "exlr8/metal/dsa_indexed_decode.metal": "07513916a3ffdd17a298da317a6a5b6fe23b95c85178099e582695742c6a4bd5",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba",
+    "exlr8/kv_lookup.py": "523bf51ad05b6741cc2fac02cb89d84799ac0e634f2bf3b62d802498d861e7db",
+    "exlr8/metal/kv_lookup.metal": "3f976d406ef42fc843766581d338a87c038812ac1fa73f1dacee82a0bc81c9e9",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/fast_norm.py": "c914982e68b9146e259f7ff23f84b626b2c77ab736dbd0e51ecec95440b13c79",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe"
+  },
+  "notes": [
+    "All modes retain 151 dense K4 projections, 78 fused RMS layers, and 78 attention lookup layers.",
+    "MTP uses the production prefill input sizes and keeps batched target verification. Dense K4, residual/RMS, and attention lookup kernels support one to four token rows.",
+    "The one- and three-draft-token MTP modes select the production kernels during target verification. Larger batches use the existing native paths.",
+    "Previous MTP comparisons use the preceding suite. Fresh production controls report any speed drift; these are not interleaved old/new MTP pairs.",
+    "All target verification row counts are compiled before timing, and an eight-output warmup runs before each timed request.",
+    "First replies use the same cached 23861-token prompt. Follow-ups use the same production reply cache and 4469 new input tokens.",
+    "Exactness is diagnostic. The user permits divergence when answer quality is close and measured speed gains are worthwhile.",
+    "The exactness diagnostic compares tokens, text, all full log probability vectors, committed target cache values, and offsets.",
+    "Allocated cache padding is diagnostic. Prefix preparation and fingerprint checks are outside timing."
+  ]
+}

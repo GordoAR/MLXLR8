@@ -114,8 +114,31 @@ def test_verification_rewinds_rejected_tokens(errors, limit, prompt):
     assert actual == expected_tokens(prompt, limit)
     assert responses[-1].finish_reason == "length"
     assert_cache(cache, [*prompt, *actual])
-    if not errors and limit > 1:
+    if not errors and model._mtp_stats.get("proposed_draft_tokens", 0):
         assert model._mtp_stats["draft_acceptance"] == 1
+
+
+@pytest.mark.parametrize("cap", [1, 3])
+@pytest.mark.parametrize("errors", [(), (0,), (1,), (0, 1, 2)])
+def test_mtp_uses_production_prefill_and_rewinds_rejected_tokens(cap, errors):
+    model = DraftRuntime(errors)
+    cache = model.make_cache()
+    calls = []
+    forward = model.target.forward_hidden
+
+    def tracked(inputs, target_cache):
+        calls.append(inputs.shape[1])
+        return forward(inputs, target_cache)
+
+    model.target.forward_hidden = tracked
+    prompt = [1, 2, 3, 4, 5, 6]
+    responses = list(stream_generate(model, tokenizer(), prompt, max_tokens=11,
+        prompt_cache=cache, num_draft_tokens=cap, prefill_step_size=2))
+    actual = [response.token for response in responses]
+    assert actual == expected_tokens(prompt, 11)
+    assert calls[:4] == [2, 2, 1, 1]
+    assert all(1 <= length <= cap + 1 for length in calls[4:])
+    assert_cache(cache, [*prompt, *actual])
 
 
 def test_eos_and_early_client_stop_keep_cache_keys_aligned():
@@ -269,3 +292,44 @@ def test_teacher_forced_mtp_cache_matches_full_layer(monkeypatch):
         np.testing.assert_allclose(np.asarray(actual.keys)[:, :, :4],
                                    np.asarray(expected.keys)[:, :, :4], rtol=2e-5, atol=2e-6)
     assert cache[-1].draft[0].offset == 5
+
+
+@pytest.mark.parametrize("cap", [1, 3])
+@pytest.mark.parametrize("draft_faster", [False, True])
+def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap, draft_faster):
+    import exlr8.mtp as mtp_module
+
+    model = DraftRuntime()
+    clock = [0.0]
+    monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
+    target_forward = model.target.forward_hidden
+    draft_step = model.draft_step
+    calls = []
+
+    def target(inputs, cache):
+        rows = inputs.shape[1]
+        calls.append(rows)
+        clock[0] += 1.0 if rows == 1 or draft_faster else 2.0 * rows
+        return target_forward(inputs, cache)
+
+    def draft(*args):
+        clock[0] += 0.1
+        return draft_step(*args)
+
+    model.target.forward_hidden = target
+    model.draft_step = draft
+    cache = model.make_cache()
+    prompt = [1, 2]
+    output = list(stream_generate(model, tokenizer(), prompt, max_tokens=20,
+        prompt_cache=cache, num_draft_tokens=cap))
+    tokens = [row.token for row in output]
+    assert tokens == expected_tokens(prompt, 20)
+    assert_cache(cache, [*prompt, *tokens])
+    assert model._mtp_stats["adaptive_drafting"]
+    assert model._mtp_stats["one_token_passes"] >= 1
+    assert model._mtp_stats["measured_draft_passes"] >= 1
+    if draft_faster:
+        assert model._mtp_stats["measured_draft_passes"] > 1
+    else:
+        assert model._mtp_stats["measured_draft_passes"] == 1
+        assert all(rows == 1 for rows in calls[4:])

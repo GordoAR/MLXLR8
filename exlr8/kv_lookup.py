@@ -1,4 +1,4 @@
-"""Exact byte lookup for the tested one-token attention projections."""
+"""Byte lookup for the tested small-batch attention projections."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -58,13 +58,17 @@ def _kernel(query):
 
 @mx.compile
 def query_projection(x, weights, table):
-    return _kernel(True)(inputs=[x, weights, table], grid=(128 * 8, 1, 64),
-                         threadgroup=(128, 1, 1), output_shapes=[(1, 64, 1, 512)],
+    rows = x.shape[2]
+    return _kernel(True)(inputs=[x, weights, table], template=[("TOKENS_PER_HEAD", rows)],
+                         grid=(128 * 8, rows, 64),
+                         threadgroup=(128, 1, 1), output_shapes=[(1, 64, rows, 512)],
                          output_dtypes=[mx.bfloat16])[0]
 
 
 @mx.compile
 def value_projection(x, weights, table):
-    return _kernel(False)(inputs=[x, weights, table], grid=(128 * 16, 1, 64),
-                          threadgroup=(128, 1, 1), output_shapes=[(1, 64, 1, 256)],
+    rows = x.shape[2]
+    return _kernel(False)(inputs=[x, weights, table], template=[("TOKENS_PER_HEAD", rows)],
+                          grid=(128 * 16, rows, 64),
+                          threadgroup=(128, 1, 1), output_shapes=[(1, 64, rows, 256)],
                           output_dtypes=[mx.bfloat16])[0]

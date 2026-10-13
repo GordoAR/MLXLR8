@@ -169,6 +169,8 @@ def stream_generate(
     proposed_by_depth = [0] * num_draft_tokens
     accepted_by_depth = [0] * num_draft_tokens
     draft_seconds = verify_seconds = sync_seconds = 0.0
+    direct_seconds = direct_passes = draft_cost = draft_tokens_checked = 0
+    measured_draft_passes = 0
     model._mtp_stats = {}
 
     def sample(logits):
@@ -178,21 +180,24 @@ def stream_generate(
     with wired_limit(model, [stream]), mx.stream(stream):
         start = time.perf_counter()
         progress(0, tokens.size)
-        for pos in range(0, tokens.size, prefill_step_size):
-            part = tokens[pos:pos + prefill_step_size]
+        # Leave the final prompt token for the production decode path.
+        for pos in range(0, tokens.size - 1, prefill_step_size):
+            part = tokens[pos:min(pos + prefill_step_size, tokens.size - 1)]
             hidden, _ = model.forward_hidden(part[None], cache)
             mx.eval(hidden, [c.state for c in cache[:-1]])
             model.sync_draft_cache(state, prefill_step_size)
-            if pos + part.size < tokens.size:
-                progress(pos + part.size, tokens.size)
-        seed, seed_logprobs = sample(model.target.project_hidden(hidden[:, -1:, :])[0, 0])
+            progress(pos + part.size, tokens.size)
+            mx.clear_cache()
+        hidden, _ = model.forward_hidden(tokens[-1:][None], cache)
+        model.sync_draft_cache(state, prefill_step_size)
+        seed, seed_logprobs = sample(model.target.project_hidden(hidden)[:, -1, :])
         mx.eval(seed, seed_logprobs)
         progress(tokens.size, tokens.size)
         previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
         prompt_seconds = time.perf_counter() - start
         prompt_tps = tokens.size / prompt_seconds
         decode_start = time.perf_counter()
-        pending = [(int(seed.item()), seed_logprobs, False)]
+        pending = [(int(seed.item()), seed_logprobs[0], False)]
         finish_reason = None
         try:
             while max_tokens < 0 or count < max_tokens:
@@ -225,7 +230,13 @@ def stream_generate(
                 draft_start = time.perf_counter()
                 y = mx.array([[pending[-1][0]]], dtype=mx.uint32)
                 draft_hidden = previous_hidden
-                n_draft = num_draft_tokens if max_tokens < 0 else min(num_draft_tokens, max_tokens - count)
+                # Measure one-token cost, then keep drafting only while its
+                # observed cost per committed token is lower.
+                budget = num_draft_tokens
+                if direct_passes == 0 or (measured_draft_passes
+                        and draft_cost / draft_tokens_checked >= direct_seconds / direct_passes):
+                    budget = 0
+                n_draft = budget if max_tokens < 0 else min(budget, max_tokens - count)
                 for _ in range(n_draft):
                     draft_logits, draft_hidden = model.draft_step(y, draft_hidden, state.draft)
                     y, _ = sample(draft_logits[:, -1, :])
@@ -257,7 +268,16 @@ def stream_generate(
                 sync_start = time.perf_counter()
                 state.draft.trim(state.draft[0].offset - draft_offset)
                 model.sync_draft_cache(state, prefill_step_size)
-                sync_seconds += time.perf_counter() - sync_start
+                sync_end = time.perf_counter()
+                sync_seconds += sync_end - sync_start
+                pass_seconds = sync_end - draft_start
+                if n_draft == 0:
+                    direct_seconds += pass_seconds
+                    direct_passes += 1
+                elif n_draft == num_draft_tokens:
+                    draft_cost += pass_seconds
+                    draft_tokens_checked += accepted + 1
+                    measured_draft_passes += 1
                 previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
                 pending = [
                     (draft_tokens[i], logprobs[i], True) for i in range(accepted)
@@ -266,6 +286,9 @@ def stream_generate(
                     "accepted_draft_tokens": accepted_total,
                     "proposed_draft_tokens": proposed_total,
                     "verification_cycles": cycles,
+                    "one_token_passes": direct_passes,
+                    "measured_draft_passes": measured_draft_passes,
+                    "adaptive_drafting": True,
                     "draft_acceptance": accepted_total / max(proposed_total, 1),
                     "acceptance_by_depth": [
                         hits / max(proposals, 1)

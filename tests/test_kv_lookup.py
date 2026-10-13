@@ -1,4 +1,4 @@
-"""Lookup tables, native arithmetic, and one-token dispatch conditions."""
+"""Lookup tables, native arithmetic, and small-batch dispatch conditions."""
 
 from types import SimpleNamespace
 
@@ -53,14 +53,20 @@ def test_table_and_split_codes_match_independent_cpu_decode(lookup_weights):
         np.testing.assert_array_equal(np.asarray(weight.view(mx.uint16)), bits)
 
 
-def test_both_projection_outputs_match_native_bits(lookup_weights):
+@pytest.mark.parametrize("rows", [1, 2, 3, 4])
+@pytest.mark.parametrize("transposed", [False, True])
+def test_both_projection_outputs_match_native_bits(lookup_weights, rows, transposed):
     _, _, (wk_codes, wv_codes, table), wk, wv = lookup_weights
     rng = np.random.default_rng(256)
-    full_query = mx.array(rng.normal(size=(1, 64, 1, 256)).astype(np.float32)).astype(mx.bfloat16)
-    value = mx.array(rng.normal(size=(1, 64, 1, 512)).astype(np.float32)).astype(mx.bfloat16)
+    shape = (1, rows, 64) if transposed else (1, 64, rows)
+    full_query = mx.array(rng.normal(size=shape + (256,)).astype(np.float32)).astype(mx.bfloat16)
+    value = mx.array(rng.normal(size=shape + (512,)).astype(np.float32)).astype(mx.bfloat16)
+    if transposed:
+        full_query, value = full_query.swapaxes(1, 2), value.swapaxes(1, 2)
     actual = (kv_lookup.query_projection(full_query, wk_codes, table),
               kv_lookup.value_projection(value, wv_codes, table))
-    expected = (full_query[..., :192] @ wk, value @ wv.swapaxes(-1, -2))
+    expected = (mx.concatenate([full_query[:, :, i:i + 1, :192] @ wk for i in range(rows)], axis=2),
+                mx.concatenate([value[:, :, i:i + 1, :] @ wv.swapaxes(-1, -2) for i in range(rows)], axis=2))
     mx.eval(actual, expected)
     for left, right in zip(actual, expected):
         assert bool(mx.all(mx.isfinite(left)).item())
@@ -69,7 +75,10 @@ def test_both_projection_outputs_match_native_bits(lookup_weights):
 
 @pytest.mark.parametrize("shape,dtype,enabled,use_lookup", [
     ((1, 64, 1, 256), mx.bfloat16, True, True),
-    ((1, 64, 2, 256), mx.bfloat16, True, False),
+    ((1, 64, 2, 256), mx.bfloat16, True, True),
+    ((1, 64, 3, 256), mx.bfloat16, True, True),
+    ((1, 64, 4, 256), mx.bfloat16, True, True),
+    ((1, 64, 5, 256), mx.bfloat16, True, False),
     ((2, 64, 1, 256), mx.bfloat16, True, False),
     ((1, 64, 1, 256), mx.float32, True, False),
     ((1, 64, 1, 256), mx.bfloat16, False, False),
@@ -89,12 +98,15 @@ def test_query_dispatch_keeps_full_head_storage(monkeypatch, shape, dtype, enabl
 
 @pytest.mark.parametrize("shape,dtype,enabled,use_lookup", [
     ((1, 64, 1, 512), mx.bfloat16, True, True),
-    ((1, 64, 2, 512), mx.bfloat16, True, False),
+    ((1, 64, 2, 512), mx.bfloat16, True, True),
+    ((1, 64, 3, 512), mx.bfloat16, True, True),
+    ((1, 64, 4, 512), mx.bfloat16, True, True),
+    ((1, 64, 5, 512), mx.bfloat16, True, False),
     ((2, 64, 1, 512), mx.bfloat16, True, False),
     ((1, 64, 1, 512), mx.float32, True, False),
     ((1, 64, 1, 512), mx.bfloat16, False, False),
 ])
-def test_value_dispatch_requires_one_bf16_token(monkeypatch, shape, dtype, enabled, use_lookup):
+def test_value_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, enabled, use_lookup):
     class Weight:
         def swapaxes(self, *_):
             return self
