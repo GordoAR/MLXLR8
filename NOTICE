@@ -1,0 +1,86 @@
+MLXLR8
+Copyright 2026 MLXLR8 contributors.
+
+Original loader, integration, and tested kernel changes are licensed under
+Apache License 2.0. See LICENSE. Upstream notices and terms follow below.
+
+MLXLR8 third-party notices
+
+EXL3 bitstream packing, mcg codebook, tile permutation, and Hadamard
+primitives follow exllamav3 v0.0.43, commit
+c5d9c657966ffeeaa9353f0cc899f18629da4a13.
+Copyright (c) 2025 Turboderp. MIT License.
+Source: https://github.com/turboderp-org/exllamav3
+License: third_party/licenses/exllamav3-MIT.txt
+
+Metal codeword windows, SIMD accumulation, split reduction, segmented
+matrix tiles, and expert block tables are adapted from PonyExl3
+ponyexl3/mlx/gemv_metal.py:_gemv_simd_source and _mm_seg_source,
+and its EXL3SwitchGLU prefill path, commit
+8e7fa6b1556f59fc669e25087903b279b9b0346f.
+Copyright 2026 Theinruj Toranavikrai. Apache License 2.0.
+Changed for EXLR8 packed expert indexing, FP8 E4M3 lookup, stored shard
+orders, per-slot activations, runtime dimensions, exact inline E4M3
+decoding, fused transforms, and float32 matrix arithmetic.
+Source: https://github.com/beamivalice/PonyExl3
+License: third_party/licenses/PonyExl3-Apache-2.0.txt
+
+GLM attention and routing equations follow the public MLX-LM and oMLX
+GLM DSA implementations. Inherited GLM source: Copyright 2025 Apple Inc.
+MLX-LM package: Copyright 2023 Apple Inc. MIT License.
+oMLX repository: Copyright 2025 oMLX contributors. Apache License 2.0.
+Sources: https://github.com/ml-explore/mlx-lm
+         https://github.com/jundot/omlx
+Licenses: third_party/licenses/mlx-lm-MIT.txt
+          third_party/licenses/oMLX-Apache-2.0.txt
+The local model class loads packed EXLR8 callables and uses a bounded
+expert cache instead of allocating full precision expert modules.
+The typed SwiGLU helper follows MLX unary_ops.h:Sigmoid (Apple MIT).
+
+GLM MTP normalization and input equations follow vLLM's DeepSeek V3.2
+target and MTP models. Copyright contributors to the vLLM project.
+Apache License 2.0. The local implementation adds MLX packed weights,
+target verification, and accepted-prefix cache reconstruction.
+Sources: https://github.com/vllm-project/vllm/tree/main/vllm/models/deepseek_v32/nvidia
+         https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/deepseek_mtp.py
+License text: third_party/licenses/vLLM-Apache-2.0.txt
+
+Downloaded model weights remain subject to their original GLM-5.3
+License and EXLR8 additions under CC BY 4.0. Their LICENSE and README.md
+are stored beside the weights. No model weights are part of this code.
+
+The dense K4 matrix-vector kernel follows MLX 0.32.3 fp_quantized.h,
+fp4.h, and fp8.h. Copyright 2025-2026 Apple Inc. MIT License.
+The kernel keeps native arithmetic order and replaces FP8 weight loads
+with exact EXLR8 K4 decoding. Unused declarations and encoder
+constructors are removed. Full license text and source hashes are in
+exlr8/metal/dense_k4_decode.metal.
+Source: https://github.com/ml-explore/mlx/tree/v0.32.3/mlx/backend/metal/kernels
+
+The attention lookup kernels retain MLX 0.32.3 gemv.h arithmetic and replace
+weight loads with exact BF16 block-table lookups. Copyright 2023-2024
+Apple Inc. MIT License. Full license text and the source hash are in
+exlr8/metal/kv_lookup.metal. The lookup table builder is local code.
+
+The residual-add/RMS kernel follows MLX 0.32.3 rms_norm.metal,
+rms_looped. Copyright 2024 Apple Inc. MIT License. It retains the native
+reduction and rounds the residual sum to BF16 before normalization.
+Full license text is in exlr8/metal/residual_rms.metal.
+
+MLX array runtime and GPU templates: Copyright 2023 Apple Inc. MIT License.
+Source: https://github.com/ml-explore/mlx
+License: third_party/licenses/MLX-MIT.txt
+File-level kernel notices retain additional Apple copyright years.
+
+Unmodified PonyExl3 CPU reference snapshot:
+third_party/ponyexl3/ref, source revision
+8e7fa6b1556f59fc669e25087903b279b9b0346f.
+Original NOTICE: third_party/ponyexl3/NOTICE
+Original license: third_party/ponyexl3/LICENSE
+
+Base model: Z.AI GLM-5.3.
+Source: https://huggingface.co/zai-org/GLM-5.3-BF16
+Prepared EXLR8 quantization files and the up1 manifest are credited to
+KindlingAI, the model publisher. Retain the model card and license beside
+the downloaded weights. This repository distributes runtime code only.
+Source: https://huggingface.co/kindlingai/glm-5.3-exlr8-k2-k3-k4

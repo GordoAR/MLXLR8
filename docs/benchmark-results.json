@@ -1,0 +1,152 @@
+{
+  "test_date": "2026-10-13",
+  "hardware": "Apple M3 Ultra, 512 GB unified memory",
+  "macos": "27.0.1",
+  "python": "3.11",
+  "mlx": "0.32.3",
+  "mlx_lm": "0.32.0",
+  "model": "GLM-5.3 EXLR8 up1",
+  "prefix_tokens": 23861,
+  "outputs_per_request": 512,
+  "followup_input_tokens": 4469,
+  "order": [
+    "control",
+    "production",
+    "production",
+    "control"
+  ],
+  "control": {
+    "rms_fusion": false,
+    "ops": 50
+  },
+  "production": {
+    "rms_fusion": true,
+    "ops": 100
+  },
+  "comparisons": {
+    "first_decode": {
+      "median_seconds": {
+        "baseline": 37.55532981250144,
+        "candidate": 37.135107770503964
+      },
+      "ratio_of_medians_time_cut_percent": 1.1189411572085084,
+      "paired_time_cut_percent": [
+        1.0681655080902797,
+        1.1697368838282207
+      ],
+      "median_decode_tps": {
+        "baseline": 13.606591195378012,
+        "candidate": 13.760570231209087
+      }
+    },
+    "followup_decode": {
+      "median_seconds": {
+        "baseline": 37.796397020996665,
+        "candidate": 37.4039642505013
+      },
+      "ratio_of_medians_time_cut_percent": 1.038280898249,
+      "paired_time_cut_percent": [
+        1.1006846501746215,
+        0.975861836528169
+      ],
+      "median_decode_tps": {
+        "baseline": 13.519807388079663,
+        "candidate": 13.661657049333225
+      }
+    },
+    "followup_prefill": {
+      "median_seconds": {
+        "baseline": 41.349810562496714,
+        "candidate": 40.81318895849836
+      },
+      "ratio_of_medians_time_cut_percent": 1.2977607314241468,
+      "paired_time_cut_percent": [
+        1.1942980874065534,
+        1.4010080015333548
+      ]
+    },
+    "followup_total": {
+      "median_seconds": {
+        "baseline": 79.14620758349338,
+        "candidate": 78.21715320899966
+      },
+      "ratio_of_medians_time_cut_percent": 1.1738457253477774,
+      "paired_time_cut_percent": [
+        1.1495656288724287,
+        1.1981022440246236
+      ]
+    }
+  },
+  "median_peak_memory": {
+    "baseline": {
+      "first_peak_gib": 366.71471227146685,
+      "followup_peak_gib": 382.7002190873027
+    },
+    "candidate": {
+      "first_peak_gib": 366.95814291760325,
+      "followup_peak_gib": 385.2611182332039
+    }
+  },
+  "maximum_peak_gib": 385.2611202467233,
+  "all_eight_requests_exact": true,
+  "exact_checks": [
+    "output token IDs",
+    "output text",
+    "all full log probability arrays",
+    "all allocated cache values"
+  ],
+  "model_weights_redistributed": false,
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "7f93e99f7988884ee000bba9263bca384ded8643784093ab9c73f63bf073a838",
+    "exlr8/dense.py": "f331e8951562d65b800145f0085043d0d809f12c730222cfed5b5db475d28134",
+    "exlr8/dense_trellis.py": "06babc705a6aa328367b21fd8ba60694bb60fad7ca672adb502f40939fab4306",
+    "exlr8/dsa_indexed.py": "6a93f7662869cc4166753ec5303f248befb6f65eab42fca2339965f43be67bb8",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "2a14f49a6512016382190bae3444e6a74a40c24f1c0f8daa8a28ad8264ee8671",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "5455c463ab1d174729f59470a8fb28e8b80a39fc711956665ee9fad98a93d092",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/model.py": "7ebcb1fdcf7a2109e6293c9167481ca3ea6a6395f5685497799c81b6ee9ecb2f",
+    "exlr8/mtp.py": "3f4b113afb3cd76cd47d01cc798f7652b58e9a414a53c6bc455936a1a1fab663",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "93b3a09c884a3d04e1f0335ad50a0b2744c63245f1037503335203b134b23fb4",
+    "exlr8/metal/dsa_indexed_decode.metal": "07513916a3ffdd17a298da317a6a5b6fe23b95c85178099e582695742c6a4bd5",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba",
+    "exlr8/kv_lookup.py": "2d09e42587b7c0c3dd2b7f8d0f351493e7b5630876271559cde64901cda06094",
+    "exlr8/metal/kv_lookup.metal": "88af8af56ffba8c278a34cf71a2d47d77b27e711097c00f4363f8f449f57055f",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/fast_norm.py": "4fab0fe7bfd288a59716d7036d9afea8140b7de9315fe3602ea5db1f063bfc71",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe"
+  },
+  "source_report_sha256": "7a121072cf44cb92ca8bc2eea22044e2cb31409f01132710b43effed12118e81",
+  "limits": [
+    "One saved prefix and fixed continuation; results do not predict other workloads.",
+    "Exactness is relative to the prior EXLR8 runtime with the same quantized weights.",
+    "Private prompt and cache data are not distributed."
+  ]
+}

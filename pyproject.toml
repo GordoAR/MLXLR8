@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools==79.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlxlr8"
+version = "0.1.0"
+description = "MLXLR8: EXLR8 up1 GLM-5.3 inference on Apple Silicon"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "third_party/licenses/*.txt", "third_party/ponyexl3/LICENSE", "third_party/ponyexl3/NOTICE"]
+dependencies = ["mlx==0.32.3", "mlx-lm==0.32.0", "numpy>=2", "safetensors>=0.8"]
+
+[project.urls]
+Repository = "https://github.com/GordoAR/MLXLR8"
+Issues = "https://github.com/GordoAR/MLXLR8/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+exlr8 = "exlr8.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["exlr8*"]
+
+[tool.setuptools.package-data]
+exlr8 = ["metal/*.metal"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

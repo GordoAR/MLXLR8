@@ -1,0 +1,5 @@
+include README.md ATTRIBUTIONS.md requirements-macos-arm64.txt
+recursive-include docs *.md *.json
+recursive-include tests *.py
+recursive-include tools *.py *.metal
+recursive-include third_party *.txt *.py LICENSE NOTICE
