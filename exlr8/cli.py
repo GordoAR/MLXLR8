@@ -146,7 +146,7 @@ def main():
         p.add_argument("--memory-limit-gib", type=float)
         p.add_argument("--resident", action="store_true", help="Keep all main experts in RAM")
         p.add_argument("--no-optimize", action="store_true", help="Use packed dense weights and reference expert kernels")
-        p.add_argument("--mtp", action="store_true", help="Verify prompt and retained K3 token proposals with the full model")
+        p.add_argument("--mtp", action="store_true", help="Use faster prompt lookup and relaxed K3 drafts; answers can differ")
         p.add_argument("--num-draft-tokens", type=int, default=63, help="Maximum proposals per pass; K3 proposals use at most three")
         p.add_argument("--prefill-step-size", type=int, default=2048)
         p.add_argument("--max-tokens", type=int, default=128)

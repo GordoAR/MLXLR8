@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlxlr8"
-version = "0.1.5"
+version = "0.1.6"
 description = "MLXLR8: EXLR8 up1 GLM-5.3 inference on Apple Silicon"
 requires-python = ">=3.11"
 license = "Apache-2.0"
