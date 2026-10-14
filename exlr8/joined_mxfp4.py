@@ -69,10 +69,10 @@ def _inner(x, indices, unit, weights, scales, h, m):
     xh = xh.reshape(rows, 1, h)
     order = mx.argsort(flat) if rows > 1 else None
     ids = flat if order is None else flat[order]
-    lhs = mx.arange(flat.size, dtype=mx.uint32) // slots if order is None else (order // slots).astype(mx.uint32)
+    lhs = None if rows == 1 else (order // slots).astype(mx.uint32)
     # MLX's sorted RHS GEMM requires no LHS indices and four rows per expert.
     grouped = ids.size >= 4 * weights["gate_up"][0].shape[0]
-    if grouped:
+    if grouped and rows > 1:
         xh = xh.reshape(rows, h)[lhs].reshape(ids.size, 1, h)
     gu = mx.gather_qmm(
         xh, *weights["gate_up"], lhs_indices=None if grouped else lhs,
@@ -87,7 +87,7 @@ def _inner(x, indices, unit, weights, scales, h, m):
     )[0]
     value = mx.gather_qmm(
         hidden.reshape(ids.size, 1, m), *weights["down"],
-        lhs_indices=None if grouped else mx.arange(ids.size, dtype=mx.uint32),
+        lhs_indices=None if rows == 1 or grouped else mx.arange(ids.size, dtype=mx.uint32),
         rhs_indices=ids, transpose=True, group_size=32, bits=4,
         mode="mxfp4", sorted_indices=order is not None,
     ).reshape(ids.size, h)

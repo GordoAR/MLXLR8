@@ -1,0 +1,44 @@
+{
+  "version": "0.1.8",
+  "baseline": "PR #8 / v0.1.7",
+  "baseline_commit": "46f80c03b9e6e531a436de85e0a9fc775407776c",
+  "change": "Omit explicit LHS indices on both one-row joined expert matrix calls. Weight encoding, attention and MTP are unchanged.",
+  "model": "GLM-5.3 EXLR8 up1",
+  "main_layers": 78,
+  "main_weight_bits": 4,
+  "draft_weight_bits": 3,
+  "prompt_cases": 8,
+  "samples_per_case": 2,
+  "fixed_model_requests": 16,
+  "documented_pr8_decode_tps": 23.820845015295212,
+  "fixed_decode_tps": 23.843759537006477,
+  "documented_pr8_request_peak_gib": 392.00728520564735,
+  "fixed_request_peak_gib": 392.00681450404227,
+  "runtime_tests": {
+    "passed": 763,
+    "subtests_passed": 23,
+    "skipped": 9
+  },
+  "quality": {
+    "merge_functions": {
+      "answers": 2,
+      "behavior_cases_each": 519,
+      "passed": true
+    },
+    "json": {
+      "answers": 6,
+      "semantic_checks_passed": true
+    },
+    "incident_and_email": {
+      "answers": 4,
+      "facts_passed": true
+    },
+    "source_review": "Partial answers with incorrect bit width and loop/cache claims.",
+    "cache_explanation": "Within180words; live-process condition and fair warmed repeated comparison omitted."
+  },
+  "baseline_comparison": "PR8 speed comes from its documented eight-prompt test. The fixed version was tested on the same prompts.",
+  "code_execution_verified": true,
+  "fixed_runtime_file_count": 49,
+  "fixed_module_sha256": "bf8105b13de834d08e90916355357f9d52fbd9114b2f79333f4c804bef41dbcf",
+  "fifty_tokens_per_second_met": false
+}
