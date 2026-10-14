@@ -109,6 +109,10 @@ class DenseLinear(nn.Module):
                 if ("packed_k4" in self and x.ndim == 3 and x.shape[0] == 1
                         and 1 <= x.shape[1] <= 4 and x.shape[2] == self.in_features
                         and x.dtype == mx.bfloat16):
+                    if x.shape[1] == 4:
+                        from .dense_trellis import shared_fp8_linear
+
+                        return shared_fp8_linear(x, self.fp8_packed, self.exponents, self.suh, self.svh)
                     from .dense_trellis import k4_linear
 
                     return k4_linear(x, self.packed_k4, self.exponents, self.suh, self.svh)
