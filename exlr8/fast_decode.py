@@ -227,6 +227,8 @@ def compiled_expert_mlp_finish(expert):
     Return the typed routed sum, shared sum, and residual sum. RMS, routing,
     attention, and cache updates stay outside the compiled call.
     """
+    if getattr(expert, "affine", None) is not None:
+        return expert.affine.finish
     import mlx.core as mx
 
     h, m = expert.hidden, expert.intermediate

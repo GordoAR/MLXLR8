@@ -160,7 +160,8 @@ def main():
             p.add_argument("--port", type=int, default=8081)
     args = parser.parse_args()
     if args.memory_limit_gib is None:
-        args.memory_limit_gib = 416 if args.resident else 96
+        resident_default = 416 if args.no_optimize else 440
+        args.memory_limit_gib = resident_default if args.resident else 96
     if args.expert_cache_gib < 0 or args.memory_limit_gib <= 0:
         parser.error("Memory limits must be positive; expert cache can be zero")
     if args.prefill_step_size <= 0 or args.max_tokens <= 0:
@@ -169,6 +170,7 @@ def main():
         parser.error("The draft token count must be nonnegative")
     if args.expert_cache_gib >= args.memory_limit_gib - 16:
         parser.error("Leave at least 16 GiB for dense weights and temporary arrays")
-    if args.resident and args.memory_limit_gib < 384:
-        parser.error("Resident mode requires at least 384 GiB for the memory limit")
+    resident_minimum = 384 if args.no_optimize else 416
+    if args.resident and args.memory_limit_gib < resident_minimum:
+        parser.error(f"Resident mode requires at least {resident_minimum} GiB for the memory limit")
     (generate if args.command == "generate" else serve)(args)

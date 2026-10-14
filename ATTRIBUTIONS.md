@@ -17,6 +17,7 @@ MLXLR8 adds the EXLR8 loader, MLX integration, and tested kernel changes. The un
 
 - `exlr8/model.py`: load EXLR8 packed operators, preserve GLM attention and routing, and select the tested decode paths.
 - `exlr8/trellis.py` and expert kernels: apply the EXLR8 E4M3 rounding and stored expert layout to the upstream EXL3 codec and PonyExl3 kernel structure.
+- `exlr8/native_affine.py`: re-encode resident main expert matrices with MLX affine4 and use native gathered matrix multiplication. Reuse the existing signed scales, transforms, and typed result kernels. This path changes inner weight values.
 - Dense K4 and attention lookup kernels: retain MLX arithmetic order while changing weight loads to the exact local representation.
 - Residual-add/RMS kernel: retain the native MLX reduction and round the residual sum to BF16 before normalization.
 - Loader, cache, CLI, integration tests, runtime profile, and kernel changes: MLXLR8 / EXLR8 work.

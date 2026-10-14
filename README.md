@@ -2,14 +2,16 @@
 
 Run GLM-5.3 EXLR8 **up1** weights on Apple Silicon with MLX. MLXLR8 adds the EXLR8 loader, MLX integration, and tested kernel changes. The Python package and terminal command are named `exlr8`.
 
-The runtime keeps expert weights packed, applies the format's required E4M3 rounding, and serves a local OpenAI-compatible chat API. All 78 main layers run. MTP is off by default.
+The runtime serves a local OpenAI-compatible chat API. All 78 main layers run. MTP is off by default.
+
+Optimized resident mode converts the 75 main expert layers to native MLX affine 4-bit groups of 128 in RAM. This conversion changes weight values. Signed scales, transforms, and activation casts keep the existing path. Model files remain unchanged. SSD-cache mode keeps the original packed trellis weights. `--no-optimize` selects the original expert values and reference operators.
 
 ## Requirements
 
 - Apple Silicon Mac with **macOS 26 or later**. The pinned MLX wheels require this version.
 - Native **Python 3.11** and Git. Check that Python reports `arm64`.
 - A complete local **GLM-5.3 EXLR8 up1** model folder from [KindlingAI's EXLR8 checkpoint](https://huggingface.co/kindlingai/glm-5.3-exlr8-k2-k3-k4), with the files below.
-- For the tested resident profile: **M3 Ultra with 512 GB unified memory**. The measured peak was 385.26 GiB. Leave memory for macOS and other apps.
+- For the tested resident profile: **M3 Ultra with 512 GB unified memory**. Use a **440 GiB** memory limit. Leave memory for macOS and other apps.
 - For SSD-cache mode: enough RAM for your chosen cache, dense weights, prompt buffers, and macOS. This mode reads selected experts from disk and is slower.
 
 The tested system used macOS 27.0.1, Python 3.11, MLX 0.32.3, and MLX-LM 0.32.0. Other hardware profiles have not received the same full-model checks.
@@ -76,7 +78,7 @@ On the tested 512 GB Mac:
 
 ```sh
 MLX_MAX_MB_PER_BUFFER=2048 exlr8 generate \
-  --model "$MODEL" --resident --memory-limit-gib 416 \
+  --model "$MODEL" --resident --memory-limit-gib 440 \
   --prompt "What is 2 + 2? Give a short answer." --max-tokens 64 --temp 0
 ```
 
@@ -97,11 +99,11 @@ Adjust those limits to your Mac's RAM. The MLX limit is a process budget, not ad
 
 ```sh
 MLX_MAX_MB_PER_BUFFER=2048 exlr8 serve \
-  --model "$MODEL" --resident --memory-limit-gib 416 \
+  --model "$MODEL" --resident --memory-limit-gib 440 \
   --host 127.0.0.1 --port 8081
 ```
 
-For SSD-cache mode, replace `--resident --memory-limit-gib 416` with `--expert-cache-gib 32 --memory-limit-gib 96 --prefill-step-size 512`.
+For SSD-cache mode, replace `--resident --memory-limit-gib 440` with `--expert-cache-gib 32 --memory-limit-gib 96 --prefill-step-size 512`.
 
 Wait for the model to load. In a second terminal:
 
@@ -118,6 +120,10 @@ Client settings: base URL `http://127.0.0.1:8081/v1`, model `glm-5.3-exlr8-up1`.
 
 EXLR8 selects `MLX_MAX_OPS_PER_BUFFER=100` before MLX loads. An explicit value takes precedence. The commands above select `MLX_MAX_MB_PER_BUFFER=2048`; MLX counts array elements for this setting despite its name.
 
+Optimized resident mode defaults to a 440 GiB process budget and requires at least 416 GiB. The reference resident mode defaults to 416 GiB and requires at least 384 GiB. Long prompts and larger input blocks need more temporary memory. Native affine weights use 4.5 bits per value, including float32 scales and biases. This adds 12.5% to the main expert weight storage. Conversion occurs during model loading and does not write to the checkpoint. The optional draft layer keeps its original K3 format.
+
+Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use the original expert values. The benchmark tool now records the expert format and rejects these old prefixes. Saved reference prefixes remain compatible.
+
 Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. The requested draft count is a maximum. MTP measures cost and can stop proposals. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
@@ -131,7 +137,7 @@ EXLR8_TEST_METAL=1 python -m pytest -q
 
 The repository includes PonyExl3's small CPU reference files for these tests. Tests that need private captured tensors skip when those fixtures are absent. No model download is needed for the portable tests.
 
-The current code passed 621 tests and 23 subtests with Metal tests enabled. Nine tests were skipped. The clean release package also passed normal and streamed chat requests with the local up1 model.
+Version 0.1.0 passed 621 tests and 23 subtests with Metal tests enabled. Nine tests were skipped. The clean release package also passed normal and streamed chat requests with the local up1 model.
 
 The combined production test used two reversed pairs. Each process generated 512 outputs from a saved 23,861-token prefix, then 512 outputs after the same 4,469 new input tokens.
 
@@ -156,9 +162,28 @@ Against the preceding batched suite, the one-token limit increased first-reply s
 
 All eight MTP answers were reviewed against the input code. The model's earlier bit-width, cache-removal, and generated launch-size errors were absent. The code helper had the required local definitions. All replies stopped at 512 tokens. The follow-up still continued incomplete code instead of giving the requested test explanation. The generated program was not executed. These two tasks do not establish quality for other tasks.
 
-The portable release passed 669 tests and 23 subtests; nine tests were skipped because private fixtures are absent. Both installed environments match all 45 tested runtime files. Model files and dependency versions are unchanged.
+Version 0.1.1 passed 669 tests and 23 subtests; nine tests were skipped because private fixtures are absent. Both installed environments matched all 45 tested runtime files. Model files and dependency versions were unchanged.
 
-See [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
+Native affine experts increased normal decode speed by 15.4% on the first reply and 15.8% on the follow-up. The new test used one production model load. It rebuilt the 23,860 cached prompt tokens with the new expert values. Each code reply used 512 output tokens. The follow-up added the same 4,469 input tokens. The reference runs were earlier; these comparisons were not paired.
+
+| Mode | First reply tokens/s | Follow-up tokens/s | Total follow-up seconds |
+|---|---:|---:|---:|
+| v0.1.1 normal | 13.78 | 13.67 | 78.22 |
+| Native affine normal | 15.90 | 15.83 | 67.72 |
+| v0.1.1 MTP, draft limit three | 12.05 | 18.10 | 69.64 |
+| Native affine MTP, draft limit three | 14.85 | 23.73 | 57.43 |
+
+Against the earlier MTP medians, first-reply speed increased by 23.2% and follow-up speed increased by 31.1%. Normal generation remains faster for the first reply. MTP remains off by default.
+
+Peak memory was 429.82 GiB. This process held the K3 draft layer and MTP history during normal requests. Main expert storage increased by 12.5%. Loading and conversion took 165.50 seconds; fresh prefix preparation took 163.73 seconds. Both times are outside the request measurements. The earlier MTP load took 88.63 seconds, but load times were not measured as a controlled pair.
+
+The normal replies stayed close to the reference answers. The bit widths, shared expert offset, cache admission, and generated fused launch size were correct. The first reply also made an unverified cache-memory estimate. The MTP follow-up used a wrong generated launch size: `features // 288` instead of `features // 128 * 288`. Both calculation answers were correct. The code replies remain incomplete at 512 tokens. The follow-ups continued input code instead of explaining tests. The generated program was not executed. These samples do not establish general model quality.
+
+A separate float16 variant saved about 21 GiB and added about 1.3% to normal decode speed. Both first replies added false 1-bit claims. The normal first reply also added a false cache-loop failure. Its MTP follow-up used the correct launch size. The selected format keeps float32 matrix operands, scales, biases, and results. These observed first-reply errors weighed against the small extra speed.
+
+The selected release passed 693 tests and 23 subtests with Metal enabled. Nine private-fixture tests were skipped. Both installed environments match all 46 tested runtime files. All 236 model-file identities and dependency versions stayed unchanged.
+
+See [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 
 ```sh
 MLX_MAX_MB_PER_BUFFER=2048 MLX_MAX_OPS_PER_BUFFER=100 python tools/benchmark_runtime.py \
