@@ -84,3 +84,9 @@ Prepared EXLR8 quantization files and the up1 manifest are credited to
 KindlingAI, the model publisher. Retain the model card and license beside
 the downloaded weights. This repository distributes runtime code only.
 Source: https://huggingface.co/kindlingai/glm-5.3-exlr8-k2-k3-k4
+
+The four-row dense FP8 kernel uses the MLX 0.32.3 E4M3 decoder.
+Copyright 2025-2026 Apple Inc. MIT License. The local kernel shares each
+weight across four F32 input rows and preserves the existing sum order.
+Full license text is in exlr8/metal/dense_fp8_shared.metal.
+Source: https://github.com/ml-explore/mlx/tree/v0.32.3/mlx/backend/metal/kernels

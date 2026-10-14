@@ -51,6 +51,9 @@ def test_k4_retention_requires_supported_record(monkeypatch, record, enabled, op
     ((2048,), mx.bfloat16, False),
     ((1, 1, 2048), mx.float16, False),
     ((1, 1, 2048), mx.float32, False),
+    ((1, 4, 2048), mx.float16, False),
+    ((1, 4, 2048), mx.float32, False),
+    ((2, 4, 2048), mx.bfloat16, False),
 ])
 def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, use_k4):
     layer = dense.DenseLinear(RECORDS[0], fake_expansion(monkeypatch), decode_k4=True)
@@ -63,11 +66,17 @@ def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, 
         calls.append("fp8")
         assert args[1] is layer.fp8_packed
         return args[0]
+    def shared(*args):
+        calls.append("shared_fp8")
+        assert args[1] is layer.fp8_packed
+        return args[0]
     monkeypatch.setattr(dense_trellis, "k4_linear", selected)
     monkeypatch.setattr(dense_trellis, "expanded_linear", fallback)
+    monkeypatch.setattr(dense_trellis, "shared_fp8_linear", shared)
     x = mx.zeros(shape, dtype=dtype)
     assert layer(x) is x
-    assert calls == (["k4"] if use_k4 else ["fp8"])
+    expected = "shared_fp8" if use_k4 and shape[1] == 4 else "k4" if use_k4 else "fp8"
+    assert calls == [expected]
 
 
 @pytest.mark.parametrize("name,record,expected", [

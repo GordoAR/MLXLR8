@@ -124,7 +124,7 @@ Optimized resident mode defaults to a 440 GiB process budget and requires at lea
 
 Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use different expert values. The benchmark tool records the expert format and rejects old optimized prefixes. Saved reference prefixes remain compatible.
 
-Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens start with up to three proposals. Full acceptance increases the limit to 15, then to 63. Rejection restores the three-proposal limit. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. `--num-draft-tokens` sets the maximum for either source. MTP measures the ordinary generation pipeline with up to eight tokens and compares each source's cost per committed token. It checks four K3 cost samples before it stops a costly neural source. The existing word acceptance rule is retained. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
+Resident mode retains dense K4 weights, including with `--mtp`. One to three BF16 token rows use the K4 path; four rows share reads from the existing FP8 weights. Residual-add/RMS fusion and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens start with up to three proposals. Full acceptance increases the limit to 15, then to 63. Rejection restores the three-proposal limit. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. `--num-draft-tokens` sets the maximum for either source. MTP measures the ordinary generation pipeline with up to eight tokens and compares each source's cost per committed token. It checks four K3 cost samples before it stops a costly neural source. The existing word acceptance rule is retained. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
 
@@ -303,3 +303,19 @@ Optional MTP logic also follows [vLLM](https://github.com/vllm-project/vllm). Th
 Original MLXLR8 code is under [Apache 2.0](LICENSE). Upstream code retains its licenses and notices. See [detailed attribution](ATTRIBUTIONS.md), [NOTICE](NOTICE), and [license texts](third_party/licenses). Model weights are a separate download and retain their own GLM-5.3 and quantization license terms.
 
 Version 0.1.8 omits explicit LHS index arrays from both one-row joined expert matrix calls. MLX still supplies default indices. Weight encoding, attention and MTP behavior are unchanged. The same eight prompts were tested twice: 23.84 tokens/s, versus the documented PR #8 result of 23.82 tokens/s. Request peak memory was 392.01 GiB. Code and JSON checks passed; incident and email facts were correct. Source and cache explanation faults remain. The release passed 763 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. See [one-row index fix results](docs/one-row-index-fix-results.json).
+
+
+Version 0.1.9 shares each existing FP8 dense weight across four token rows. It keeps F32 input calculations, the sum order, transforms, scales, and final casts. This path needs no additional weight cache.
+
+The same eight prompts were tested twice against the documented v0.1.8 results:
+
+| Measure | v0.1.8 | v0.1.9 | Change |
+|---|---:|---:|---:|
+| Decode, tokens/s | 23.84 | 24.85 | +4.21% |
+| Fresh-prompt prefill, tokens/s | 85.56 | 85.62 | +0.06% |
+| Sum of median request times, seconds | 68.55 | 66.09 | -3.60% |
+| Peak allocation, GiB | 392.007 | 392.007 | — |
+
+Prefill is new input tokens divided by time to the first token. The seven fresh prompts contain 73–119 input tokens. The source prompt has 23,860 cached tokens and one new token; it is reported separately. Loading, warmup, and cache preparation are outside these measurements. Decode excludes the first output token.
+
+Every prompt had faster decode. All 16 final answers matched v0.1.8. Two code answers passed 519 behavior cases each, six JSON answers passed, and four incident/email answers retained the required facts. The four existing source-review and cache-explanation failures remain. No new answer-quality failure was found. The release passed 766 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. The 50 tokens/s target remains unmet. See [shared FP8 results](docs/shared-fp8-results.json).
