@@ -61,10 +61,10 @@ def _k4_kernel(k, n):
 
 @mx.compile
 def k4_linear(x, packed_k4, exponents, suh, svh):
-    # DenseLinear selects only BF16 shape (1, 1, K) and the two tested records.
-    k, n = x.shape[-1], exponents.shape[0]
+    # DenseLinear selects BF16 shape (1, 1..4, K) and the two tested records.
+    rows, k, n = x.shape[1], x.shape[-1], exponents.shape[0]
     xh = _hadamard(x.astype(mx.float32) * suh.astype(mx.float32))
-    out = _k4_kernel(k, n)(inputs=[xh.reshape(1, k), packed_k4, exponents],
-        grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
-        output_shapes=[(1, n)], output_dtypes=[mx.float32])[0].reshape(1, 1, n)
+    out = _k4_kernel(k, n)(inputs=[xh.reshape(rows, k), packed_k4, exponents],
+        template=[("BATCH_ROWS", rows)], grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
+        output_shapes=[(rows, n)], output_dtypes=[mx.float32])[0].reshape(1, rows, n)
     return (_hadamard(out) * svh.astype(mx.float32)).astype(x.dtype)

@@ -42,14 +42,17 @@ def test_k4_retention_requires_supported_record(monkeypatch, record, enabled, op
 
 @pytest.mark.parametrize("shape,dtype,use_k4", [
     ((1, 1, 2048), mx.bfloat16, True),
-    ((1, 2, 2048), mx.bfloat16, False),
+    ((1, 2, 2048), mx.bfloat16, True),
+    ((1, 3, 2048), mx.bfloat16, True),
+    ((1, 4, 2048), mx.bfloat16, True),
+    ((1, 5, 2048), mx.bfloat16, False),
     ((2, 1, 2048), mx.bfloat16, False),
     ((1, 2048), mx.bfloat16, False),
     ((2048,), mx.bfloat16, False),
     ((1, 1, 2048), mx.float16, False),
     ((1, 1, 2048), mx.float32, False),
 ])
-def test_k4_dispatch_requires_one_bf16_token(monkeypatch, shape, dtype, use_k4):
+def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, use_k4):
     layer = dense.DenseLinear(RECORDS[0], fake_expansion(monkeypatch), decode_k4=True)
     calls = []
     def selected(*args):
@@ -108,9 +111,9 @@ def test_model_loader_requires_resident_optimized_experts(
 
 @pytest.mark.parametrize("resident,no_optimize,mtp,expected", [
     (True, False, False, True), (False, False, False, False),
-    (True, True, False, False), (True, False, True, False),
+    (True, True, False, False), (True, False, True, True),
 ])
-def test_cli_disables_k4_for_mtp_and_nonresident_mode(
+def test_cli_keeps_k4_for_mtp_and_disables_it_for_nonresident_mode(
         monkeypatch, tmp_path, resident, no_optimize, mtp, expected):
     from exlr8 import cli
     calls = []
@@ -133,24 +136,27 @@ def test_cli_disables_k4_for_mtp_and_nonresident_mode(
 
 
 @pytest.mark.parametrize("record", RECORDS)
-def test_k4_real_shapes_match_native_inner_and_signed_full_output(record):
+@pytest.mark.parametrize("rows", [1, 2, 3, 4])
+def test_k4_real_shapes_match_native_inner_and_signed_full_output(record, rows):
     _, n, k, _, side = record
     rng = np.random.default_rng(2048 + side)
     tensors = {"trellis": mx.array(rng.integers(0, 256, n * k // 2, dtype=np.uint8)),
                "suh": mx.array(rng.uniform(-1.5, 1.5, k).astype(np.float16)),
                "svh": mx.array(rng.uniform(-1.5, 1.5, n).astype(np.float16))}
     layer = dense.DenseLinear(record, tensors, decode_k4=True)
-    x = mx.array(rng.normal(size=(1, 1, k)).astype(np.float32)).astype(mx.bfloat16)
+    x = mx.array(rng.normal(size=(1, rows, k)).astype(np.float32)).astype(mx.bfloat16)
     xh = dense_trellis._hadamard(x.astype(mx.float32) * layer.suh.astype(mx.float32))
     actual_inner = dense_trellis._k4_kernel(k, n)(
-        inputs=[xh.reshape(1, k), layer.packed_k4, layer.exponents],
-        grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
-        output_shapes=[(1, n)], output_dtypes=[mx.float32])[0]
-    expected_inner = mx.quantized_matmul(
-        xh.reshape(1, k), layer.fp8_packed, scales=layer.exponents, mode="mxfp8")
+        inputs=[xh.reshape(rows, k), layer.packed_k4, layer.exponents],
+        template=[("BATCH_ROWS", rows)], grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
+        output_shapes=[(rows, n)], output_dtypes=[mx.float32])[0]
+    expected_inner = mx.concatenate([mx.quantized_matmul(
+        xh[:, i, :], layer.fp8_packed, scales=layer.exponents, mode="mxfp8")
+        for i in range(rows)], axis=0)
     actual = layer(x)
-    expected = dense_trellis.expanded_linear(
-        x, layer.fp8_packed, layer.exponents, layer.suh, layer.svh)
+    expected = mx.concatenate([dense_trellis.expanded_linear(
+        x[:, i:i + 1, :], layer.fp8_packed, layer.exponents, layer.suh, layer.svh)
+        for i in range(rows)], axis=1)
     mx.eval(actual_inner, expected_inner, actual, expected)
     parameters = layer.parameters()
     assert {"packed_k4", "fp8_packed", "exponents"} <= parameters.keys()

@@ -436,8 +436,11 @@ def test_router_init_keeps_simple_callables(router_init, tagged):
 
 @pytest.mark.parametrize("batch,rows,k,resident,optimize,routed,shared,use_finish", [
     (1, 1, 4, True, True, 8, 1, True),
-    (2, 1, 4, True, True, 8, 1, False),
-    (1, 2, 4, True, True, 8, 1, False),
+    (2, 1, 4, True, True, 8, 1, True),
+    (1, 2, 4, True, True, 8, 1, True),
+    (1, 3, 4, True, True, 8, 1, True),
+    (1, 4, 4, True, True, 8, 1, True),
+    (1, 5, 4, True, True, 8, 1, False),
     (1, 1, 3, True, True, 8, 1, False),
     (1, 1, 4, False, True, 8, 1, False),
     (1, 1, 4, True, False, 8, 1, False),
@@ -488,7 +491,7 @@ def test_decoder_finish_dispatch(monkeypatch, batch, rows, k, resident, optimize
     assert len(native_calls) == (0 if use_finish else 2)
     if use_finish:
         normalized, ids, scores, residual = calls[0]
-        assert ids.shape == (1, 1, 9) and scores.shape == (1, 1, 8)
+        assert ids.shape == (batch, rows, 9) and scores.shape == (batch, rows, 8)
         np.testing.assert_array_equal(np.array(residual), np.array(x))
         np.testing.assert_array_equal(np.array(normalized), np.array(mx.fast.rms_norm(x, layer.post_norm, args.rms_norm_eps)))
         np.testing.assert_array_equal(np.array(out), np.full(x.shape, 0.75, dtype=np.float32))
@@ -498,7 +501,10 @@ def test_decoder_finish_dispatch(monkeypatch, batch, rows, k, resident, optimize
     (True, 1, 1, 6144, "bfloat16", "bfloat16", True),
     (False, 1, 1, 6144, "bfloat16", "bfloat16", False),
     (True, 2, 1, 6144, "bfloat16", "bfloat16", False),
-    (True, 1, 2, 6144, "bfloat16", "bfloat16", False),
+    (True, 1, 2, 6144, "bfloat16", "bfloat16", True),
+    (True, 1, 3, 6144, "bfloat16", "bfloat16", True),
+    (True, 1, 4, 6144, "bfloat16", "bfloat16", True),
+    (True, 1, 5, 6144, "bfloat16", "bfloat16", False),
     (True, 1, 1, 128, "bfloat16", "bfloat16", False),
     (True, 1, 1, 6144, "float32", "float32", False),
     (True, 1, 1, 6144, "bfloat16", "float32", False),

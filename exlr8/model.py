@@ -222,14 +222,18 @@ class Attention(nn.Module):
 
     def _absorbed_queries(self, q_nope, full_query=None):
         if (self._lookup and full_query is not None
-                and full_query.shape == (1, 64, 1, 256) and full_query.dtype == mx.bfloat16):
+                and len(full_query.shape) == 4 and full_query.shape[:2] == (1, 64)
+                and 1 <= full_query.shape[2] <= 4 and full_query.shape[3] == 256
+                and full_query.dtype == mx.bfloat16):
             from .kv_lookup import query_projection
 
             return query_projection(full_query, self.wk_codes, self.kv_lookup_table)
         return q_nope @ self.wk
 
     def _project_values(self, output):
-        if self._lookup and output.shape == (1, 64, 1, 512) and output.dtype == mx.bfloat16:
+        if (self._lookup and len(output.shape) == 4 and output.shape[:2] == (1, 64)
+                and 1 <= output.shape[2] <= 4 and output.shape[3] == 512
+                and output.dtype == mx.bfloat16):
             from .kv_lookup import value_projection
 
             return value_projection(output, self.wv_codes, self.kv_lookup_table)
@@ -340,7 +344,8 @@ class DecoderLayer(nn.Module):
     def __call__(self, x, mask=None, cache=None, prev_topk_indices=None):
         a = self.args
         r, topk = self.self_attn(mx.fast.rms_norm(x, self.input_norm, a.rms_norm_eps), mask, cache, prev_topk_indices)
-        if (self._fused_rms and x.shape == r.shape == (1, 1, 6144)
+        if (self._fused_rms and x.shape == r.shape and x.ndim == 3 and x.shape[0] == 1
+                and 1 <= x.shape[1] <= 4 and x.shape[2] == 6144
                 and x.dtype == r.dtype == mx.bfloat16):
             from .fast_norm import residual_rms_pair
 
@@ -354,7 +359,7 @@ class DecoderLayer(nn.Module):
             ids, scores = route_experts(self.gate(x.astype(mx.float32)), self.bias, a)
             shared = mx.full(ids.shape[:-1] + (1,), a.n_routed_experts, dtype=mx.uint32)
             indices = mx.concatenate([ids, shared], axis=-1)
-            if (x.size // x.shape[-1] == 1 and a.num_experts_per_tok == 8 and a.n_shared_experts == 1
+            if (1 <= x.size // x.shape[-1] <= 4 and a.num_experts_per_tok == 8 and a.n_shared_experts == 1
                     and getattr(self.experts, "k", None) == 4
                     and self.experts.store.resident and self.experts.store.optimize):
                 if self._expert_finish is None:

@@ -24,14 +24,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-// Q1 only. Keep each BF16 boundary and the four native F32 PV partitions.
+// One to four query rows. Keep BF16 boundaries and four ordered F32 PV partitions.
 #if STAGE == 2
 const uint i = thread_position_in_grid.x;
+const uint query = i / 32768u, column = i % 32768u;
 float total = 0.0f;
 for (uint part = 0; part < 4u; ++part)
-    total += partial[part * 32768u + i];
+    total += partial[(query * 4u + part) * 32768u + column];
 out[i] = T(total);
 #elif STAGE == 0
+const uint query = threadgroup_position_in_grid.z;
+q += query * 32768u;
+qp += query * 4096u;
+ids += query * 2048u;
+valid += query * 2048u;
+out += query * 131072u;
 const uint tid = thread_position_in_threadgroup.x;
 const uint sg = tid / 32u, lane = tid % 32u;
 const uint mr = ((lane / 4u) & 4u) + ((lane / 2u) % 4u);

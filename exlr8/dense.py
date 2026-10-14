@@ -106,7 +106,8 @@ class DenseLinear(nn.Module):
     def __call__(self, x: mx.array) -> mx.array:
         if self.format == 1:
             if self.optimize:
-                if ("packed_k4" in self and x.shape == (1, 1, self.in_features)
+                if ("packed_k4" in self and x.ndim == 3 and x.shape[0] == 1
+                        and 1 <= x.shape[1] <= 4 and x.shape[2] == self.in_features
                         and x.dtype == mx.bfloat16):
                     from .dense_trellis import k4_linear
 

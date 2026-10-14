@@ -456,18 +456,19 @@ def test_direct_activation_full_glm_q1_dimensions(dtype_name):
 @metal
 @pytest.mark.parametrize("dtype_name", ["float32", "bfloat16"])
 @pytest.mark.parametrize("hidden", [128, 6144])
-def test_finish_fused_keeps_typed_weighted_shared_and_residual_sums(dtype_name, hidden):
+@pytest.mark.parametrize("rows", [1, 2, 3, 4])
+def test_finish_fused_keeps_typed_weighted_shared_and_residual_sums(dtype_name, hidden, rows):
     import mlx.core as mx
     from exlr8.fast_decode import _finish, _finish_fused
 
     rng = np.random.default_rng(731)
     dtype = getattr(mx, dtype_name)
-    ids = mx.array([7, 0, 3, 3, 6, 2, 5, 1, 8], dtype=mx.uint32)
-    inner = mx.array(rng.normal(size=(9, 1, hidden)).astype(np.float32))
+    ids = mx.array(np.tile([7, 0, 3, 3, 6, 2, 5, 1, 8], rows), dtype=mx.uint32)
+    inner = mx.array(rng.normal(size=(rows * 9, 1, hidden)).astype(np.float32))
     scale = mx.array(rng.uniform(-0.5, 0.5, (9, hidden)).astype(np.float16))
-    scores = mx.array(rng.uniform(0.01, 1, (1, 8)).astype(np.float32))
-    residual = mx.array(rng.normal(size=(1, hidden)), dtype=dtype)
-    values = _finish(inner, ids, scale, hidden, 1, dtype).reshape(1, 9, hidden)
+    scores = mx.array(rng.uniform(0.01, 1, (rows, 8)).astype(np.float32))
+    residual = mx.array(rng.normal(size=(rows, hidden)), dtype=dtype)
+    values = _finish(inner, ids, scale, hidden, 1, dtype).reshape(rows, 9, hidden)
     routed = (values[:, :-1, :] * scores[..., None]).sum(axis=-2).astype(dtype)
     expected = residual + (routed + values[:, -1, :])
     actual = _finish_fused(inner, ids, scale, hidden, scores, residual)
@@ -477,7 +478,8 @@ def test_finish_fused_keeps_typed_weighted_shared_and_residual_sums(dtype_name, 
 
 @metal
 @pytest.mark.parametrize("dtype_name", ["float32", "bfloat16"])
-def test_compiled_finish_full_glm_keeps_dependent_states(dtype_name):
+@pytest.mark.parametrize("rows", [1, 2, 3, 4])
+def test_compiled_finish_full_glm_keeps_dependent_states(dtype_name, rows):
     import mlx.core as mx
     from types import SimpleNamespace
     from exlr8.fast_decode import compiled_expert_mlp_finish, fast_expert_mlp
@@ -495,11 +497,12 @@ def test_compiled_finish_full_glm_keeps_dependent_states(dtype_name):
     current = mx.compile(native)
     rng = np.random.default_rng(732)
     dtype = getattr(mx, dtype_name)
-    expected = actual = mx.array(rng.normal(size=(1, 1, h)), dtype=dtype)
+    expected = actual = mx.array(rng.normal(size=(1, rows, h)), dtype=dtype)
     norm = mx.array(rng.uniform(0.7, 1.3, h), dtype=dtype)
     for step in range(12):
-        ids = mx.array(np.r_[np.roll([7, 0, 3, 3, 6, 2, 5, 1], step), 8].reshape(1, 1, 9), dtype=mx.uint32)
-        scores = mx.array(rng.uniform(0.01, 1, (1, 1, 8)).astype(np.float32))
+        ids = mx.array(np.stack([np.r_[np.roll([7, 0, 3, 3, 6, 2, 5, 1], step + r), 8]
+                                   for r in range(rows)]).reshape(1, rows, 9), dtype=mx.uint32)
+        scores = mx.array(rng.uniform(0.01, 1, (1, rows, 8)).astype(np.float32))
         expected = current(mx.fast.rms_norm(expected, norm, 1e-5), ids, scores, expected)
         actual = candidate(mx.fast.rms_norm(actual, norm, 1e-5), ids, scores, actual)
         mx.eval(expected, actual)

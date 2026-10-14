@@ -6,14 +6,15 @@ import pytest
 
 @pytest.mark.skipif(os.environ.get("EXLR8_TEST_METAL") != "1", reason="set EXLR8_TEST_METAL=1 on a Metal host")
 @pytest.mark.parametrize("zeros", [False, True])
-def test_residual_rms_keeps_native_dependent_states(zeros):
+@pytest.mark.parametrize("rows", [1, 2, 3, 4])
+def test_residual_rms_keeps_native_dependent_states(zeros, rows):
     import mlx.core as mx
     from exlr8.fast_norm import residual_rms_pair
 
     if mx.device_info()["device_name"] != "Apple M3 Ultra":
         pytest.skip("The fused profile is verified on M3 Ultra")
     rng = np.random.default_rng(733)
-    seed = rng.normal(size=(1, 1, 6144)).astype(np.float32)
+    seed = rng.normal(size=(1, rows, 6144)).astype(np.float32)
     if zeros:
         seed.fill(-0.0)
     expected = actual = mx.array(seed, dtype=mx.bfloat16)

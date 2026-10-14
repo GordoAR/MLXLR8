@@ -4,7 +4,7 @@ The fixed tiles match MLX 0.32.3 Steel on M3 Ultra for native 32-query
 chunks: QK 64x64x16, PV 32x64x16, each with 1x2 SIMD groups. Smaller
 native chunks can use different tiles. Keep their final row tail native.
 Both products use F32 operands and accumulation with a BF16 result.
-Q1 fuses native 64x32x32 QK/PE tiles and uses native 32-head PV tiles
+Q1–Q4 fuse native 64x32x32 QK/PE tiles and use native 32-head PV tiles
 with four ordered 512-key F32 partitions and one final BF16 cast.
 """
 
@@ -48,39 +48,44 @@ def _decode_kernel(stage):
 
 
 def _decode_scores(scaled_q, scaled_qp, latent, pe, ids, valid):
+    rows = scaled_q.shape[0]
     return _decode_kernel(0)(inputs=[scaled_q, scaled_qp, latent, pe, ids, valid],
-        template=[("T", mx.bfloat16)], grid=(64 * 128, 1, 1), threadgroup=(128, 1, 1),
-        output_shapes=[(1, 64, 2048)], output_dtypes=[mx.bfloat16])[0]
+        template=[("T", mx.bfloat16)], grid=(64 * 128, 1, rows), threadgroup=(128, 1, 1),
+        output_shapes=[(rows, 64, 2048)], output_dtypes=[mx.bfloat16])[0]
 
 
 def _decode_pv(probabilities, latent, ids):
+    rows = probabilities.shape[0]
     partial = _decode_kernel(1)(inputs=[probabilities, latent, ids], template=[("T", mx.bfloat16)],
-        grid=(16 * 128, 2, 4), threadgroup=(128, 1, 1),
-        output_shapes=[(1, 4, 64, 512)], output_dtypes=[mx.float32])[0]
+        grid=(16 * 128, 2, 4 * rows), threadgroup=(128, 1, 1),
+        output_shapes=[(rows, 4, 64, 512)], output_dtypes=[mx.float32])[0]
     return _decode_kernel(2)(inputs=[partial], template=[("T", mx.bfloat16)],
-        grid=(32768, 1, 1), threadgroup=(256, 1, 1),
-        output_shapes=[(1, 64, 512)], output_dtypes=[mx.bfloat16])[0]
+        grid=(32768 * rows, 1, 1), threadgroup=(256, 1, 1),
+        output_shapes=[(rows, 64, 512)], output_dtypes=[mx.bfloat16])[0]
 
 
 def _indexed_decode(q, q_pe, latent, k_pe, indices, mask, scale):
-    keys = latent.shape[2]
-    ids = indices.reshape(1, 2048)
-    valid = ids <= keys - 1
+    rows, keys = q.shape[2], latent.shape[2]
+    ids = indices.reshape(rows, 2048)
+    valid = ids <= (keys - 1 if rows == 1 else mx.arange(keys - rows, keys)[:, None])
     if mask is not None:
-        row_mask = mx.broadcast_to(mask, (1, 1, 1, keys)).reshape(1, keys)
+        row_mask = mx.broadcast_to(mask, (1, 1, rows, keys)).reshape(rows, keys)
         valid &= mx.take_along_axis(row_mask, ids, axis=-1)
     values, pe = latent.reshape(keys, 512), k_pe.reshape(keys, 64)
-    score = _decode_scores(q.reshape(1, 64, 512) * scale,
-                          q_pe.reshape(1, 64, 64) * scale, values, pe, ids, valid)
+    qr = q if rows == 1 else q.swapaxes(1, 2)
+    qp = q_pe if rows == 1 else q_pe.swapaxes(1, 2)
+    score = _decode_scores(qr.reshape(rows, 64, 512) * scale,
+                          qp.reshape(rows, 64, 64) * scale, values, pe, ids, valid)
     probabilities = mx.softmax(score, axis=-1, precise=True)
-    return _decode_pv(probabilities, values, ids).reshape(1, 64, 1, 512)
+    output = _decode_pv(probabilities, values, ids)
+    return output.reshape(1, 64, 1, 512) if rows == 1 else output.reshape(1, rows, 64, 512).swapaxes(1, 2)
 
 
 def _supported(q, q_pe, latent, k_pe, indices, mask):
     if len(q.shape) != 4 or len(latent.shape) != 4 or indices is None:
         return False
     length, keys = q.shape[2], latent.shape[2]
-    return ((length == 1 or length >= 32) and keys >= max(2048, length)
+    return ((1 <= length <= 4 or length >= 32) and keys >= max(2048, length)
         and q.shape == (1, 64, length, 512) and q_pe.shape == (1, 64, length, 64)
         and latent.shape == (1, 1, keys, 512) and k_pe.shape == (1, 1, keys, 64)
         and indices.shape == (1, 1, length, 2048) and indices.dtype == mx.uint32
@@ -120,12 +125,12 @@ def _indexed_attention(q, q_pe, latent, k_pe, indices, mask, scale, native):
 
 
 def install_indexed_prefill(attention):
-    """Wrap one instance; Q2–Q31 and unsupported inputs keep its native path."""
+    """Wrap one instance; Q5–Q31 and unsupported inputs keep its native path."""
     native = attention._sparse_attention
 
     def sparse(q, q_pe, latent, k_pe, indices, mask):
         if _supported(q, q_pe, latent, k_pe, indices, mask):
-            if q.shape[2] == 1:
+            if q.shape[2] <= 4:
                 return _indexed_decode(q, q_pe, latent, k_pe, indices, mask, attention.scale)
             return _indexed_attention(q, q_pe, latent, k_pe, indices, mask, attention.scale, native)
         return native(q, q_pe, latent, k_pe, indices, mask)

@@ -27,7 +27,7 @@ def test_installer_routes_only_supported_queries(monkeypatch, length):
     monkeypatch.setattr(dsa_indexed, "_indexed_decode", lambda *values: calls.append(("decode", values)) or "decode")
     attention = SimpleNamespace(scale=0.0625, _sparse_attention=native)
     dsa_indexed.install_indexed_prefill(attention)
-    expected = "decode" if length == 1 else "indexed" if length >= 32 else "native"
+    expected = "decode" if length <= 4 else "indexed" if length >= 32 else "native"
     assert attention._sparse_attention(*args) == expected
     assert len(calls) == 1 and calls[0][0] == expected
     assert calls[0][1][:6] == tuple(args)
@@ -38,7 +38,7 @@ def test_installer_routes_only_supported_queries(monkeypatch, length):
 
 
 @pytest.mark.parametrize("change", ["batch", "heads", "dims", "pe", "keys", "selected", "indices", "signed_ids", "rank", "mask", 0, 1, 2, 3])
-@pytest.mark.parametrize("length", [1, 64])
+@pytest.mark.parametrize("length", [1, 4, 64])
 def test_installer_keeps_unsupported_inputs_native(monkeypatch, change, length):
     args, calls = fake_inputs(length), []
     if isinstance(change, int):
@@ -161,6 +161,42 @@ def test_decode_products_keep_masked_bf16_boundaries_and_native_partitions():
     p, expected_p = mx.softmax(actual, axis=-1, precise=True), mx.softmax(score, axis=-1, precise=True)
     assert_bits_equal(p, expected_p)
     assert_bits_equal(dsa_indexed._decode_pv(p, latent, ids), expected_p @ values)
+
+
+@metal
+@pytest.mark.parametrize("length", [2, 3, 4])
+@pytest.mark.parametrize("masked", [False, True])
+def test_decode_batch_matches_independent_queries_with_causal_masks(length, masked):
+    q, qp, latent, pe, ids = random_inputs(length)
+    keys = latent.shape[2]
+    mask = None
+    if masked:
+        mask = ((mx.arange(length)[:, None] + mx.arange(keys)[None]) % 7 != 6)
+    actual = dsa_indexed._indexed_decode(q, qp, latent, pe, ids, mask, 0.0625)
+    expected = []
+    for row in range(length):
+        row_mask = mx.arange(keys) <= keys - length + row
+        if mask is not None:
+            row_mask &= mask[row]
+        expected.append(dsa_indexed._indexed_decode(q[:, :, row:row + 1], qp[:, :, row:row + 1],
+            latent, pe, ids[:, :, row:row + 1], row_mask, 0.0625))
+    assert actual.shape == (1, 64, length, 512)
+    assert_bits_equal(actual, mx.concatenate(expected, axis=2))
+
+
+@metal
+@pytest.mark.parametrize("length", [2, 3, 4])
+def test_decode_batch_cannot_read_future_values(length):
+    q, qp, latent, pe, ids = random_inputs(length)
+    keys = latent.shape[2]
+    ids = mx.concatenate([mx.broadcast_to(mx.arange(keys - length, keys, dtype=mx.uint32),
+        (1, 1, length, length)), ids[..., length:]], axis=-1)
+    actual = dsa_indexed._indexed_decode(q, qp, latent, pe, ids, None, 0.0625)
+    changed_latent = mx.concatenate([latent[:, :, :-1], latent[:, :, -1:] + 5], axis=2)
+    changed_pe = mx.concatenate([pe[:, :, :-1], pe[:, :, -1:] + 5], axis=2)
+    changed = dsa_indexed._indexed_decode(q, qp, changed_latent, changed_pe, ids, None, 0.0625)
+    assert_bits_equal(actual[:, :, :-1], changed[:, :, :-1])
+    assert bool(mx.any(actual[:, :, -1] != changed[:, :, -1]).item())
 
 
 @metal
