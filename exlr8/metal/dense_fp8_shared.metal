@@ -23,7 +23,7 @@ SOFTWARE.
 
 */
 // E4M3 decoder adapted from MLX 0.32.3 fp8.h.
-// Four rows share each byte load; the F32 reduction order is unchanged.
+// Four rows share packed reads; the F32 reduction order is unchanged.
 #include <metal_simdgroup>
 #include <metal_stdlib>
 using namespace metal;
@@ -49,8 +49,7 @@ struct fp8_e4m3 {
   uint8_t bits;
 };
 
-inline float fp8_fetch(const device uint* weights, uint c, uint r) {
-    uchar code = reinterpret_cast<const device uchar*>(weights)[c * INPUT_K + r];
+inline float fp8_decode(uchar code) {
     return float(*(thread fp8_e4m3*)(&code));
 }
 
@@ -69,28 +68,58 @@ METAL_FUNC void fp8_shared_rows(
     uint first = group.y * 8u + simd_group * 4u;
     value result[4] = {value(0.0f), value(0.0f), value(0.0f), value(0.0f)};
     for (uint block = 0u; block < INPUT_K; block += 256u) {
-        value activation[VALUES];
-        uint input = block + lane * VALUES;
-        #pragma unroll
-        for (short i = 0; i < VALUES; i++) {
+        if constexpr (K4_SIDE == 1) {
+            uint input = block + lane * VALUES;
             #pragma unroll
-            for (short row = 0; row < ROWS; row++) {
-                activation[i][row] = x[uint(row) * INPUT_K + input + uint(i)];
+            for (short pair = 0; pair < 2; pair++) {
+                uint column = first + uint(pair) * 2u;
+                uint2 packed0 = reinterpret_cast<const device uint2*>(weights)[column * (INPUT_K / 8) + input / 8u];
+                uint2 packed1 = reinterpret_cast<const device uint2*>(weights)[(column + 1u) * (INPUT_K / 8) + input / 8u];
+                value dot0(0.0f), dot1(0.0f);
+                #pragma unroll
+                for (short i = 0; i < VALUES; i++) {
+                    value activation;
+                    #pragma unroll
+                    for (short row = 0; row < ROWS; row++) {
+                        activation[row] = x[uint(row) * INPUT_K + input + uint(i)];
+                    }
+                    dot0 += activation * fp8_decode(uchar(packed0[i / 4] >> (8 * (i % 4))));
+                    dot1 += activation * fp8_decode(uchar(packed1[i / 4] >> (8 * (i % 4))));
+                }
+                float scale0 = 1.0f, scale1 = 1.0f;
+                if constexpr (K4_SIDE == 1) {
+                    scale0 = fp8_scale(scales[column * (INPUT_K / 32) + block / 32u + lane / 4u]);
+                    scale1 = fp8_scale(scales[(column + 1u) * (INPUT_K / 32) + block / 32u + lane / 4u]);
+                }
+                result[pair * 2] += scale0 * dot0;
+                result[pair * 2 + 1] += scale1 * dot1;
             }
-        }
-        #pragma unroll
-        for (short column = 0; column < 4; column++) {
-            value dot(0.0f);
+        } else {
+            value activation[VALUES];
+            uint input = block + lane * VALUES;
             #pragma unroll
             for (short i = 0; i < VALUES; i++) {
-                float weight = fp8_fetch(weights, first + uint(column), input + uint(i));
-                dot += activation[i] * weight;
+                #pragma unroll
+                for (short row = 0; row < ROWS; row++) {
+                    activation[i][row] = x[uint(row) * INPUT_K + input + uint(i)];
+                }
             }
-            float scale = 1.0f;
-            if constexpr (K4_SIDE == 1) {
-                scale = fp8_scale(scales[(first + uint(column)) * (INPUT_K / 32) + block / 32u + lane / 4u]);
+            #pragma unroll
+            for (short column = 0; column < 4; column++) {
+                value dot(0.0f);
+                uint2 packed = reinterpret_cast<const device uint2*>(weights)[
+                    (first + uint(column)) * (INPUT_K / 8) + input / 8u];
+                #pragma unroll
+                for (short i = 0; i < VALUES; i++) {
+                    float weight = fp8_decode(uchar(packed[i / 4] >> (8 * (i % 4))));
+                    dot += activation[i] * weight;
+                }
+                float scale = 1.0f;
+                if constexpr (K4_SIDE == 1) {
+                    scale = fp8_scale(scales[(first + uint(column)) * (INPUT_K / 32) + block / 32u + lane / 4u]);
+                }
+                result[column] += scale * dot;
             }
-            result[column] += scale * dot;
         }
     }
     #pragma unroll

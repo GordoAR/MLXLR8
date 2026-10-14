@@ -319,3 +319,17 @@ The same eight prompts were tested twice against the documented v0.1.8 results:
 Prefill is new input tokens divided by time to the first token. The seven fresh prompts contain 73–119 input tokens. The source prompt has 23,860 cached tokens and one new token; it is reported separately. Loading, warmup, and cache preparation are outside these measurements. Decode excludes the first output token.
 
 Every prompt had faster decode. All 16 final answers matched v0.1.8. Two code answers passed 519 behavior cases each, six JSON answers passed, and four incident/email answers retained the required facts. The four existing source-review and cache-explanation failures remain. No new answer-quality failure was found. The release passed 766 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. The 50 tokens/s target remains unmet. See [shared FP8 results](docs/shared-fp8-results.json).
+
+
+Version 0.1.10 reads eight FP8 weights in one packed load. Query projections also process two output columns at a time to reduce temporary storage. The existing four-row path keeps its F32 sum order and needs no additional weight cache.
+
+The same eight prompts were tested twice against the documented v0.1.9 results, with the same command-buffer settings (`MLX_MAX_OPS_PER_BUFFER=100`, `MLX_MAX_MB_PER_BUFFER=2048`):
+
+| Measure | v0.1.9 | v0.1.10 | Change |
+|---|---:|---:|---:|
+| Decode, tokens/s | 24.85 | 25.09 | +0.99% |
+| Fresh-prompt prefill, tokens/s | 85.62 | 85.51 | -0.12% |
+| Sum of median request times, seconds | 66.09 | 65.53 | -0.84% |
+| Peak allocation, GiB | 392.007 | 392.007 | — |
+
+All eight prompts had faster decode. All 16 final answers matched v0.1.9. Two code answers passed 519 behavior cases each, six JSON answers passed, and four incident/email answers retained the required facts. The four existing source-review and cache-explanation failures remain. No new answer-quality failure was found. The unchanged tests passed 766 cases and 23 subtests with Metal enabled; nine private-fixture tests were skipped. The 50 tokens/s target remains unmet. See [packed FP8 results](docs/packed-fp8-results.json) for both speeds per prompt and the measurement definitions.
