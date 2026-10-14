@@ -84,13 +84,14 @@ def test_joined_slots_match_independent_transforms_and_dequantized_weights(joine
                                rtol=.01 if dtype == mx.bfloat16 else 3e-4, atol=2e-6)
 
 
-def test_joined_finish_keeps_shared_routed_and_residual_casts(joined_expert):
+@pytest.mark.parametrize("rows", [1, 4])
+def test_joined_finish_keeps_shared_routed_and_residual_casts(joined_expert, rows):
     expert, joined, _, _ = joined_expert
     rng = np.random.default_rng(861)
-    x = mx.array(rng.normal(size=(1, 4, expert.hidden)), mx.bfloat16)
-    ids = mx.array(rng.choice([0, 1, 255], (1, 4, 9)), mx.uint32)
+    x = mx.array(rng.normal(size=(1, rows, expert.hidden)), mx.bfloat16)
+    ids = mx.array(rng.choice([0, 1, 255], (1, rows, 9)), mx.uint32)
     ids[..., -1] = 256
-    scores = mx.array(rng.uniform(.03, .2, (1, 4, 8)), mx.float32)
+    scores = mx.array(rng.uniform(.03, .2, (1, rows, 8)), mx.float32)
     residual = mx.array(rng.normal(size=x.shape), mx.bfloat16)
     values = joined.slots(x, ids)
     routed = (values[..., :-1, :] * scores[..., None]).sum(axis=-2).astype(x.dtype)
