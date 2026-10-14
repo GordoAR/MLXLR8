@@ -155,12 +155,12 @@ def test_decode_products_keep_masked_bf16_boundaries_and_native_partitions():
     valid = ids % 7 != 6
     score = (q @ values.swapaxes(-1, -2)) + mx.where(valid[:, None],
         (qp @ pe_values.swapaxes(-1, -2)).reshape(1, 64, 2048), -float("inf"))
-    actual = dsa_indexed._decode_scores(q, qp.reshape(1, 64, 64), latent, pe, ids, valid)
+    actual = dsa_indexed._decode_scores(q.reshape(1, 64, 1, 512), qp, latent, pe, ids, valid)
     assert actual.dtype == score.dtype == mx.bfloat16
     np.testing.assert_array_equal(np.asarray(actual.view(mx.uint16)), np.asarray(score.view(mx.uint16)))
     p, expected_p = mx.softmax(actual, axis=-1, precise=True), mx.softmax(score, axis=-1, precise=True)
     assert_bits_equal(p, expected_p)
-    assert_bits_equal(dsa_indexed._decode_pv(p, latent, ids), expected_p @ values)
+    assert_bits_equal(dsa_indexed._decode_pv(p, latent, ids), (expected_p @ values).reshape(1, 64, 1, 512))
 
 
 @metal

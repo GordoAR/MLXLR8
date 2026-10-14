@@ -28,6 +28,7 @@ def save_prefix(path, cache, ids, model_path, optimized):
     save_prompt_cache(str(path), serializable, metadata={
         "model": str(Path(model_path).resolve()), "prompt_ids": json.dumps(ids),
         "optimized": str(optimized), "mtp": str(isinstance(cache[-1], MTPState)),
+        "expert_format": "joined_mxfp4_folded32" if optimized else "trellis",
     })
 
 
@@ -35,6 +36,9 @@ def load_prefix(path, model_path, optimized, mtp):
     cache, metadata = load_prompt_cache(str(path), return_metadata=True)
     if metadata["model"] != str(Path(model_path).resolve()) or metadata["optimized"] != str(optimized):
         raise ValueError("The saved prefix uses a different model or kernel mode")
+    expert_format = "joined_mxfp4_folded32" if optimized else "trellis"
+    if metadata.get("expert_format", "trellis") != expert_format:
+        raise ValueError("The saved prefix uses a different expert format; rebuild the prefix")
     ids = json.loads(metadata["prompt_ids"])
     saved_mtp = metadata["mtp"] == "True"
     if mtp and not saved_mtp:
@@ -207,7 +211,7 @@ def compare_verification(target, cache, tokens, prompt_tokens, difference, layer
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=str(DEFAULT_MODEL))
-    parser.add_argument("--memory-limit-gib", type=float, default=416)
+    parser.add_argument("--memory-limit-gib", type=float)
     parser.add_argument("--expert-cache-gib", type=float, default=32)
     parser.add_argument("--no-optimize", action="store_true")
     parser.add_argument("--splitk-verify", action="store_true", help="Test the private two-to-four-row attention path")
@@ -235,6 +239,8 @@ def main():
     parser.add_argument("--serve", action="store_true")
     parser.add_argument("--port", type=int, default=8081)
     args = parser.parse_args()
+    if args.memory_limit_gib is None:
+        args.memory_limit_gib = 416 if args.no_optimize else 440
     step_sizes = args.prefill_step_sizes or [args.prefill_step_size]
     if any(mode != "target" and (not mode.startswith("mtp") or not mode[3:].isdigit()) for mode in args.modes):
         parser.error("Modes must be target or mtp followed by a draft token count")

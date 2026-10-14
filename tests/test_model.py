@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -250,6 +251,52 @@ def test_joined_input_projection_init_bounds(joined_projection_weights, case):
     assert attention._joined_input is None
     assert attention.q_a_proj is weights["self_attn.q_a_proj"]
     assert attention.kv_a_proj is weights["self_attn.kv_a_proj_with_mqa"]
+
+
+@pytest.mark.parametrize("rows", [2, 3, 4])
+@pytest.mark.parametrize("sparse", [False, True])
+@pytest.mark.parametrize("output_dtype", [mx.bfloat16, mx.float32])
+def test_token_layout_attention_keeps_value_dtype_fallback(monkeypatch, rows, sparse, output_dtype):
+    from exlr8 import kv_lookup
+
+    calls = []
+    topk = object() if sparse else None
+    output = mx.zeros((1, 64, rows, 512), dtype=output_dtype)
+
+    def query_tokens(query, weights, table):
+        assert query.shape == (1, rows, 64, 256) and query.dtype == mx.bfloat16
+        calls.append("query_tokens")
+        return mx.zeros((1, 64, rows, 512), dtype=mx.bfloat16)
+
+    def value_tokens(value, weights, table):
+        assert value is output and value.dtype == mx.bfloat16
+        calls.append("value_tokens")
+        return mx.zeros((1, rows, 16384), dtype=mx.bfloat16)
+
+    def project_values(value):
+        assert value is output
+        calls.append("native_values")
+        return mx.zeros((1, 64, rows, 256), dtype=value.dtype)
+
+    monkeypatch.setattr(kv_lookup, "query_projection_tokens", query_tokens)
+    monkeypatch.setattr(kv_lookup, "value_projection_tokens", value_tokens)
+    monkeypatch.setattr(mx.fast, "scaled_dot_product_attention", lambda *args, **kwargs: output)
+    attention = SimpleNamespace(
+        args=SimpleNamespace(num_attention_heads=64, qk_nope_head_dim=192, kv_lora_rank=512),
+        _joined_input=None, _lookup=True, q_norm=mx.ones(1, dtype=mx.bfloat16),
+        kv_norm=mx.ones(512, dtype=mx.bfloat16), q_a_proj=lambda x: x,
+        q_b_proj=lambda x: mx.zeros((1, rows, 16384), dtype=mx.bfloat16),
+        kv_a_proj=lambda x: mx.zeros((1, rows, 576), dtype=mx.bfloat16),
+        rope=lambda x, **kwargs: x, indexer=None, scale=256**-0.5,
+        wk_codes=object(), wv_codes=object(), kv_lookup_table=object(),
+        _sparse_attention=lambda *args: output, _project_values=project_values,
+        o_proj=lambda x: x,
+    )
+    actual, selected = Attention.__call__(attention, mx.zeros((1, rows, 1), dtype=mx.bfloat16),
+                                         prev_topk_indices=topk)
+    assert selected is topk and actual.shape == (1, rows, 16384)
+    assert actual.dtype == output_dtype
+    assert calls == ["query_tokens", "value_tokens" if output_dtype == mx.bfloat16 else "native_values"]
 
 
 def test_shared_layer_reuses_previous_indices():

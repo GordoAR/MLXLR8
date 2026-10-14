@@ -1,0 +1,261 @@
+{
+  "status": "affine4_mtp_pipeline_selected_and_verified",
+  "version": "0.1.3",
+  "hardware": {
+    "device": "Apple M3 Ultra",
+    "memory_gib": 512,
+    "memory_limit_gib": 440,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048
+  },
+  "versions": {
+    "mlx": "0.32.3",
+    "mlx-lm": "0.32.0",
+    "numpy": "2.4.6",
+    "safetensors": "0.8.0"
+  },
+  "format": {
+    "bits": 4,
+    "group_size": 128,
+    "coefficient_dtype": "float32",
+    "qmm_operand_dtype": "float32",
+    "qmm_result_dtype": "float32",
+    "draft_layer": "Original K3 trellis",
+    "changed_from_0_1_2": false,
+    "original_model_files_changed": false
+  },
+  "method": {
+    "model_loads": 1,
+    "production_loader_overrides": false,
+    "only_mtp_generation_changed": true,
+    "main_operators_and_mtp_cache_classes_unchanged": true,
+    "saved_affine4_prefix_reused": true,
+    "prompt_tokens": 23861,
+    "followup_new_input_tokens": 4469,
+    "output_limit": 512,
+    "temperature": 0,
+    "target_rows_compiled_before_timing": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "warmup_output_tokens": 16,
+    "normal_generation_rerun": false,
+    "reference": "The earlier completed three-token-limit run, using the same affine4 prefix, inputs, and canonical follow-up history.",
+    "reference_comparisons_paired": false,
+    "hashes_and_finite_checks_outside_timing": true,
+    "exactness_required": false,
+    "fixed_quality_or_speed_threshold": null,
+    "limits": "Two code answers limited to 512 tokens. The generated program was not executed. Results do not establish quality or speed on other tasks."
+  },
+  "profile": {
+    "mtp": true,
+    "main_layers": 78,
+    "retained_dense_k4": 151,
+    "rms_fused_layers": 78,
+    "attention_lookup_layers": 78
+  },
+  "load_seconds_excluded_from_request": 162.65986783299013,
+  "requests": [
+    {
+      "request": "first",
+      "mode": "mtp3",
+      "input_tokens": 1,
+      "cached_tokens_before": 23860,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 0.10005037501105107,
+      "decode_seconds": 32.462073791990406,
+      "decode_tps": 15.741446565440395,
+      "elapsed_seconds": 32.56212416700146,
+      "peak_gib": 413.84983989968896,
+      "active_gib": 413.0115419141948,
+      "statistics": {
+        "accepted_draft_tokens": 3,
+        "proposed_draft_tokens": 9,
+        "verification_cycles": 3,
+        "one_token_passes": 507,
+        "ordinary_decode_tokens": 505,
+        "measured_draft_passes": 3,
+        "adaptive_drafting": true,
+        "draft_acceptance": 0.3333333333333333,
+        "acceptance_by_depth": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "draft_seconds": 0.03904575000342447,
+        "verify_seconds": 0.4143519999925047,
+        "draft_cache_sync_seconds": 0.006653999997070059,
+        "cache_finalize_seconds": 0.009056249997229315
+      },
+      "reference_decode_tps": 14.831535561000871,
+      "decode_tps_change_percent": 6.1349750381350265,
+      "output_ids_sha256": "0b67fd138daa759295b5072b372653ce92ff9997271d8df4465151f9da3cff14",
+      "output_text_sha256": "ab82a0d2422c65f348e10367a60f37b439ea3fd424d44be309178f802a6f655b",
+      "reference_elapsed_seconds": 34.554575999994995,
+      "all_logprobs_and_cache_arrays_finite": true,
+      "all_78_target_cache_offsets_correct": true,
+      "final_target_cache_offset": 24373
+    },
+    {
+      "request": "followup",
+      "mode": "mtp3",
+      "input_tokens": 4469,
+      "cached_tokens_before": 24373,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 35.87234112499573,
+      "decode_seconds": 21.618189208995318,
+      "decode_tps": 23.637502431858316,
+      "elapsed_seconds": 57.490530333991046,
+      "peak_gib": 429.6456564478576,
+      "active_gib": 416.02221580967307,
+      "statistics": {
+        "accepted_draft_tokens": 375,
+        "proposed_draft_tokens": 385,
+        "verification_cycles": 129,
+        "one_token_passes": 9,
+        "ordinary_decode_tokens": 8,
+        "measured_draft_passes": 128,
+        "adaptive_drafting": true,
+        "draft_acceptance": 0.974025974025974,
+        "acceptance_by_depth": [
+          1.0,
+          0.9765625,
+          0.9453125
+        ],
+        "draft_seconds": 1.7093052488635294,
+        "verify_seconds": 18.958251670992468,
+        "draft_cache_sync_seconds": 0.3481472550192848,
+        "cache_finalize_seconds": 4.208995960652828e-06
+      },
+      "reference_decode_tps": 23.80716397514153,
+      "decode_tps_change_percent": -0.7126491146125957,
+      "output_ids_sha256": "d8e794fd2c585113be2134070dba230039984f87efc0aa28256f234175f3347e",
+      "output_text_sha256": "97c520839743e9a22712ec725b6e8390986ead11501df3a99df766b8bc08c1d8",
+      "reference_elapsed_seconds": 57.34406637499342,
+      "all_logprobs_and_cache_arrays_finite": true,
+      "all_78_target_cache_offsets_correct": true,
+      "final_target_cache_offset": 29354
+    }
+  ],
+  "combined_request": {
+    "reference_elapsed_seconds": 91.89864237498841,
+    "elapsed_seconds": 90.0526545009925,
+    "time_reduction_percent": 2.008721594018148
+  },
+  "quality": {
+    "first": "Core facts remain close to the prior answer. Adds an unsupported cache-accounting claim about possible padded slices.",
+    "followup": "Correct fused launch size and valid finish helper. The output matches the earlier affine4 normal answer.",
+    "limits": "Both answers are incomplete at 512 tokens. The follow-up continues the input code instead of giving the requested test explanation."
+  },
+  "selection": {
+    "expert_format": "native_affine4_group128_f32",
+    "mtp_default": false,
+    "default_draft_limit": 3,
+    "reason": "User selected four-bit weights with the MTP fix."
+  },
+  "rejected_trials": {
+    "affine3": {
+      "normal_speed_gain_percent": [
+        7.004065619859001,
+        6.779025033631192
+      ],
+      "peak_gib": 346.3395786564797,
+      "peak_reduction_gib": 83.47704298608005,
+      "quality": "Generated finish helper syntax error in both follow-ups; false ternary-weight and unconditional cache-read claims in the MTP first answer.",
+      "arithmetic_correct": [
+        {
+          "expected": "16",
+          "correct": true
+        },
+        {
+          "expected": "442",
+          "correct": true
+        }
+      ],
+      "selected": false
+    },
+    "draft_limit_seven": {
+      "first_decode_tps": 13.3884371011895,
+      "followup_decode_tps": 23.059630653645737,
+      "speed_change_percent": [
+        -9.729932911370021,
+        -3.139951160400034
+      ],
+      "selected": false
+    },
+    "dense_float16": {
+      "component_cases": 12,
+      "slower_cases": 11,
+      "selected": false
+    }
+  },
+  "verification": {
+    "runtime_files_matching_full_test": 46,
+    "model_file_identities_checked": 236,
+    "sources_and_model_unchanged_at_test_end": true,
+    "metal_enabled_tests_passed": 703,
+    "subtests_passed": 23,
+    "private_fixture_tests_skipped": 9,
+    "installed_environments_matching_tested_core": 2,
+    "dependency_and_cli_checks_passed": true,
+    "installed_public_version": "0.1.3"
+  },
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "f2b463df9ec078c99f0b8235f9748c9a1da5ee4c618542aac13a755afffa2425",
+    "exlr8/dense.py": "2e0e55830163de87947f3d514ed81451845e39332228b5f9a204b12d9a205792",
+    "exlr8/dense_trellis.py": "0a4cd4c30c2a56843fa51cb75189e7df96b2ddf3601fb419e76a96aeafbe818d",
+    "exlr8/dsa_indexed.py": "c2430551c6be873754bb356caab5711dd9cb8b0ebb62610ca04219e5d7aa5c4a",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "ae15591da49378ce0f6441d4a6253e61b9290ec62e4f721390b89002950c4d65",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "a630c4eb9bbca15267729069f7eb7b7088b85aa81901866b15841d3a3a0d3f62",
+    "exlr8/fast_norm.py": "c914982e68b9146e259f7ff23f84b626b2c77ab736dbd0e51ecec95440b13c79",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/kv_lookup.py": "523bf51ad05b6741cc2fac02cb89d84799ac0e634f2bf3b62d802498d861e7db",
+    "exlr8/model.py": "ac17d7eba4a07369623052fee340516e0fc7f47fa3f9a2fe0d19936935993def",
+    "exlr8/mtp.py": "1127b345924da0717daee67af027fac21562e72e4d1eec2b8d19317c1885ae4c",
+    "exlr8/native_affine.py": "3041a3ad3251257b0d8c3b9ee20595c6994850613323827357e1df7aa50ebe68",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "b4e49a2e8d14d758f7c4f4f87c8f89e612494620d3d718023e1cd939fb5de674",
+    "exlr8/metal/dsa_indexed_decode.metal": "e0d56c1bfb915271e21732dfec814d35dedbb00ce704bba31fef4960ce96fd1c",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/kv_lookup.metal": "3f976d406ef42fc843766581d338a87c038812ac1fa73f1dacee82a0bc81c9e9",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba"
+  },
+  "private_report_sha256": {
+    "post-affine-pipeline4.json": "0d50e4875c18812871a714c76388752059f104cd55e727c575f1fa1c48ed0479",
+    "post-affine-mtp-depth.json": "f55a867f1f34bca982c73e8c058b4ec8c653c0ca4dbf294d53d8fbe4b39483a2",
+    "post-affine-three-bit-production.json": "585a08ca569ab848a9a4bea68a78082d8d38c7d405b2dab2bbb51584b1519e9b",
+    "post-affine-dense-half.json": "ec5ae3b61d8786b090b3b51398b0df6af1ecd1403d06f7d294229a695d808dde"
+  }
+}

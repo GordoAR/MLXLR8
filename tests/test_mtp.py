@@ -299,6 +299,7 @@ def test_teacher_forced_mtp_cache_matches_full_layer(monkeypatch):
 def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap, draft_faster):
     import exlr8.mtp as mtp_module
 
+    monkeypatch.setattr(mtp_module.PromptLookup, "propose", lambda self, limit: [])
     model = DraftRuntime()
     clock = [0.0]
     monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
@@ -320,10 +321,10 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
     model.draft_step = draft
     cache = model.make_cache()
     prompt = [1, 2]
-    output = list(stream_generate(model, tokenizer(), prompt, max_tokens=20,
+    output = list(stream_generate(model, tokenizer(), prompt, max_tokens=40,
         prompt_cache=cache, num_draft_tokens=cap))
     tokens = [row.token for row in output]
-    assert tokens == expected_tokens(prompt, 20)
+    assert tokens == expected_tokens(prompt, 40)
     assert_cache(cache, [*prompt, *tokens])
     assert model._mtp_stats["adaptive_drafting"]
     assert model._mtp_stats["one_token_passes"] >= 1
@@ -331,5 +332,68 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
     if draft_faster:
         assert model._mtp_stats["measured_draft_passes"] > 1
     else:
-        assert model._mtp_stats["measured_draft_passes"] == 1
-        assert all(rows == 1 for rows in calls[4:])
+        assert model._mtp_stats["measured_draft_passes"] == 4
+        wide = [i for i, rows in enumerate(calls) if rows > 1]
+        assert len(wide) == 4
+        assert all(rows == 1 for rows in calls[wide[-1] + 1:])
+
+
+@pytest.mark.parametrize("cap", [1, 3, 7])
+@pytest.mark.parametrize("ending", ["length", "eos", "close"])
+def test_slow_draft_uses_ordinary_pipeline_and_preserves_stream_and_cache(monkeypatch, cap, ending):
+    import exlr8.mtp as mtp_module
+    from mlx_lm.generate import generate_step
+
+    class NoMatch:
+        def __init__(self, tokens):
+            pass
+
+        def append(self, token):
+            pass
+
+        def propose(self, limit):
+            return []
+
+    monkeypatch.setattr(mtp_module, "PromptLookup", NoMatch)
+    model = DraftRuntime((0, 1, 2))
+    clock = [0.0]
+    monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
+    forward = model.target.forward_hidden
+    draft = model.draft_step
+
+    def target(inputs, cache):
+        clock[0] += 1.0 if inputs.shape[1] == 1 else 2.0 * inputs.shape[1]
+        return forward(inputs, cache)
+
+    def propose(*args):
+        clock[0] += .1
+        return draft(*args)
+
+    pipeline_calls = []
+    def pipeline(*args, **kwargs):
+        pipeline_calls.append(kwargs["max_tokens"])
+        yield from generate_step(*args, **kwargs)
+
+    model.target.forward_hidden = target
+    model.draft_step = propose
+    monkeypatch.setattr(mtp_module, "generate_step", pipeline, raising=False)
+    cache = model.make_cache()
+    prompt = [1, 2]
+    generator = stream_generate(model, tokenizer(eos=6 if ending == "eos" else 9), prompt,
+        max_tokens=40, prompt_cache=cache, num_draft_tokens=cap)
+    if ending == "close":
+        responses = [next(generator) for _ in range(15)]
+        generator.close()
+    else:
+        responses = list(generator)
+    tokens = [row.token for row in responses]
+    assert tokens == expected_tokens(prompt, len(tokens))
+    assert [row.generation_tokens for row in responses] == list(range(1, len(tokens) + 1))
+    assert all(row.prompt_tokens == len(prompt) for row in responses)
+    assert_cache(cache, [*prompt, *tokens])
+    assert pipeline_calls
+    if ending == "length":
+        assert len(pipeline_calls) == 2
+        assert len(tokens) == 40 and responses[-1].finish_reason == "length"
+    elif ending == "eos":
+        assert tokens[-1] == 6 and responses[-1].finish_reason == "stop"

@@ -92,6 +92,7 @@ class ExpertLayer:
         self.hidden = index.header["signs.in"]["shape"][0]
         self.intermediate = index.header[f"k{self.k}.gate.svh"]["shape"][-1]
         self.expert_bytes = self.hidden * self.intermediate * self.k // 8
+        self.affine = None
         self.scales = {}
         signs_in = index.raw("signs.in").astype(np.float16)
         signs_out = index.raw("signs.out").astype(np.float16)
@@ -130,8 +131,25 @@ class ExpertLayer:
             store.resident_bytes += sum(
                 scale.nbytes for values in self.scales.values() for scale in values
             )
+            if store.optimize and self.k == 4 and (self.hidden, self.intermediate) == (6144, 2048):
+                from .joined_mxfp4 import JoinedMXFP4
+
+                self.affine = JoinedMXFP4(self)
+                store.resident_bytes += (
+                    sum(a.nbytes for values in self.affine.weights.values() for a in values if a is not None)
+                    - sum(a.nbytes for a in self.packed.values())
+                    + self.affine.unit.nbytes
+                )
+                for projection in ("gate", "up"):
+                    incoming, outgoing = self.scales[projection]
+                    store.resident_bytes -= incoming.nbytes
+                    self.scales[projection] = (None, outgoing)
+                del self.packed
+                mx.clear_cache()
 
     def __call__(self, x, ids):
+        if self.affine is not None:
+            return self.affine.slots(x, ids)
         if self.store.resident:
             remapped, packed, scales = ids, self.packed, self.scales
         else:

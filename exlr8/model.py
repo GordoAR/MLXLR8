@@ -281,10 +281,20 @@ class Attention(nn.Module):
         a = self.args
         batch, length, _ = x.shape
         joined = (self._joined_input(x) if self._joined_input is not None
-                  and batch == length == 1 and x.dtype == mx.bfloat16 else None)
+                  and batch == 1 and (length == 1 or self._lookup and 2 <= length <= 4)
+                  and x.dtype == mx.bfloat16 else None)
         qr = mx.fast.rms_norm(self.q_a_proj(x) if joined is None else joined[0], self.q_norm, 1e-6)
-        q = self.q_b_proj(qr).reshape(batch, length, a.num_attention_heads, -1).swapaxes(1, 2)
-        q_nope, q_pe = mx.split(q, [a.qk_nope_head_dim], axis=-1)
+        q_tokens = self.q_b_proj(qr).reshape(batch, length, a.num_attention_heads, -1)
+        q = q_tokens.swapaxes(1, 2)
+        token_layout = (self._lookup and q_tokens.shape == (1, length, 64, 256)
+                        and 2 <= length <= 4 and q_tokens.dtype == mx.bfloat16)
+        if token_layout:
+            from .kv_lookup import query_projection_tokens
+
+            queries = query_projection_tokens(q_tokens, self.wk_codes, self.kv_lookup_table)
+            q_pe = q[..., a.qk_nope_head_dim:]
+        else:
+            q_nope, q_pe = mx.split(q, [a.qk_nope_head_dim], axis=-1)
         latent, k_pe = mx.split(self.kv_a_proj(x) if joined is None else joined[1], [a.kv_lora_rank], axis=-1)
         latent = mx.fast.rms_norm(latent, self.kv_norm, 1e-6)[:, None, :, :]
         k_pe = k_pe[:, None, :, :]
@@ -299,19 +309,28 @@ class Attention(nn.Module):
         if self.indexer is not None and cache is not None:
             cache[0].keys = mx.depends(cache[0].keys, (cache[1].keys, cache[1].values))
         if topk is not None:
-            output = self._sparse_attention(self._absorbed_queries(q_nope, q), q_pe, latent, k_pe, topk, mask)
-            output = self._project_values(output)
+            queries = queries if token_layout else self._absorbed_queries(q_nope, q)
+            output = self._sparse_attention(queries, q_pe, latent, k_pe, topk, mask)
+            if not token_layout:
+                output = self._project_values(output)
         else:
             pe_scores = (q_pe * self.scale) @ k_pe.swapaxes(-1, -2)
             if mask is not None:
                 pe_scores = mx.where(mask, pe_scores, -float("inf"))
             absorbed = length <= 8 or latent.shape[2] >= 4 * length
-            queries = self._absorbed_queries(q_nope, q) if absorbed else q_nope
+            queries = queries if token_layout else (self._absorbed_queries(q_nope, q) if absorbed else q_nope)
             keys = latent if absorbed else latent @ self.wk.swapaxes(-1, -2)
             values = latent if absorbed else latent @ self.wv.swapaxes(-1, -2)
             output = mx.fast.scaled_dot_product_attention(queries, keys, values, scale=self.scale, mask=pe_scores)
-            if absorbed:
+            if absorbed and not token_layout:
                 output = self._project_values(output)
+        if (token_layout and output.shape == (1, 64, length, 512)
+                and output.dtype == mx.bfloat16):
+            from .kv_lookup import value_projection_tokens
+
+            return self.o_proj(value_projection_tokens(output, self.wv_codes, self.kv_lookup_table)), topk
+        if token_layout:
+            output = self._project_values(output)
         return self.o_proj(output.swapaxes(1, 2).reshape(batch, length, -1)), topk
 
 

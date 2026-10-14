@@ -1,0 +1,331 @@
+{
+  "status": "native_affine_f32_selected_and_verified",
+  "version": "0.1.2",
+  "hardware": {
+    "device": "Apple M3 Ultra",
+    "memory_gib": 512,
+    "memory_limit_gib": 440,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048
+  },
+  "versions": {
+    "mlx": "0.32.3",
+    "mlx-lm": "0.32.0",
+    "numpy": "2.4.6",
+    "safetensors": "0.8.0"
+  },
+  "format": {
+    "bits": 4,
+    "group_size": 128,
+    "coefficient_dtype": "float32",
+    "qmm_operand_dtype": "float32",
+    "qmm_result_dtype": "float32",
+    "effective_bits_per_weight": 4.5,
+    "main_expert_storage_increase_percent": 12.5,
+    "native_main_expert_layers": 75,
+    "original_model_files_changed": false,
+    "draft_layer": "Original K3 trellis"
+  },
+  "method": {
+    "production_loader_overrides": false,
+    "model_loads": 1,
+    "target_row_counts_compiled_before_timing": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "prompt_tokens": 23861,
+    "followup_new_input_tokens": 4469,
+    "output_limit": 512,
+    "temperature": 0,
+    "fresh_candidate_prefix": true,
+    "saved_old_cache_values_reused": false,
+    "followup_history": "Canonical input prefix plus the previous normal first answer; independent of each candidate first answer.",
+    "reference": "The completed v0.1.1 normal control and the medians of its two MTP3 processes. These runs were earlier and were not paired with the candidate.",
+    "reference_comparisons_paired": false,
+    "peak_memory_scope": "The production process also held the K3 draft layer and MTP history during normal requests.",
+    "hashes_and_finite_checks_outside_timing": true,
+    "exactness_required": false,
+    "fixed_quality_or_speed_threshold": null,
+    "limits": "Two code tasks and two short arithmetic tasks. The code replies stop at 512 tokens. Timing and quality do not establish results for other tasks."
+  },
+  "load_seconds": 165.5006413749943,
+  "prefix_build_seconds_excluded_from_request": 163.72727133300214,
+  "reference": [
+    {
+      "request": "first",
+      "normal_decode_tps": 13.775345377347323,
+      "normal_elapsed_seconds": 37.24379091699666,
+      "mtp3_decode_tps": 12.048966806601285,
+      "mtp3_elapsed_seconds": 42.52091416649637
+    },
+    {
+      "request": "followup",
+      "normal_decode_tps": 13.670822390205307,
+      "normal_elapsed_seconds": 78.21594758299761,
+      "mtp3_decode_tps": 18.09768613764954,
+      "mtp3_elapsed_seconds": 69.6407090415014
+    }
+  ],
+  "requests": [
+    {
+      "request": "first",
+      "mode": "normal",
+      "input_tokens": 1,
+      "cached_tokens_before": 23860,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 0.13497008400736377,
+      "decode_seconds": 32.14550416599377,
+      "decode_tps": 15.896468674477315,
+      "elapsed_seconds": 32.280474250001134,
+      "peak_gib": 412.9691623970866,
+      "active_gib": 412.71670959703624,
+      "statistics": {},
+      "reference_decode_tps": 13.775345377347323,
+      "decode_tps_increase_percent": 15.397968174489796,
+      "output_ids_sha256": "efd2e45dddc934565cc1fa28c3fbfbf516cd299b91ea5d7f562ad73a0437c903",
+      "all_logprobs_and_cache_arrays_finite": true,
+      "cache_offsets_correct": true
+    },
+    {
+      "request": "first",
+      "mode": "mtp3",
+      "input_tokens": 1,
+      "cached_tokens_before": 23860,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 0.1034705420024693,
+      "decode_seconds": 34.41504916700069,
+      "decode_tps": 14.848155454328943,
+      "elapsed_seconds": 34.51851970900316,
+      "peak_gib": 413.68234863877296,
+      "active_gib": 413.0737390704453,
+      "statistics": {
+        "accepted_draft_tokens": 288,
+        "proposed_draft_tokens": 668,
+        "verification_cycles": 224,
+        "one_token_passes": 1,
+        "measured_draft_passes": 222,
+        "adaptive_drafting": true,
+        "draft_acceptance": 0.4311377245508982,
+        "acceptance_by_depth": [
+          0.6681614349775785,
+          0.4080717488789238,
+          0.21621621621621623
+        ],
+        "draft_seconds": 2.898920117979287,
+        "verify_seconds": 30.951992451227852,
+        "draft_cache_sync_seconds": 0.5280515829945216,
+        "cache_finalize_seconds": 1.0840012691915035e-06
+      },
+      "reference_decode_tps": 12.048966806601285,
+      "decode_tps_increase_percent": 23.231773252077193,
+      "output_ids_sha256": "7b8b79ccd8280192c2b04a84ba3ae4ad30821f283a8dd3d2f4dfa30d127f6280",
+      "all_logprobs_and_cache_arrays_finite": true,
+      "cache_offsets_correct": true
+    },
+    {
+      "request": "followup",
+      "mode": "normal",
+      "input_tokens": 4469,
+      "cached_tokens_before": 24373,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 35.43625479200273,
+      "decode_seconds": 32.28807054099161,
+      "decode_tps": 15.826278605011574,
+      "elapsed_seconds": 67.72432533299434,
+      "peak_gib": 429.2856358252466,
+      "active_gib": 415.6483754552901,
+      "statistics": {},
+      "reference_decode_tps": 13.670822390205307,
+      "decode_tps_increase_percent": 15.766836502466596,
+      "output_ids_sha256": "d8e794fd2c585113be2134070dba230039984f87efc0aa28256f234175f3347e",
+      "all_logprobs_and_cache_arrays_finite": true,
+      "cache_offsets_correct": true
+    },
+    {
+      "request": "followup",
+      "mode": "mtp3",
+      "input_tokens": 4469,
+      "cached_tokens_before": 24373,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "prefill_seconds": 35.89750720799202,
+      "decode_seconds": 21.530343792008352,
+      "decode_tps": 23.733945214087726,
+      "elapsed_seconds": 57.42785100000037,
+      "peak_gib": 429.81662164255977,
+      "active_gib": 416.04382244870067,
+      "statistics": {
+        "accepted_draft_tokens": 379,
+        "proposed_draft_tokens": 393,
+        "verification_cycles": 132,
+        "one_token_passes": 1,
+        "measured_draft_passes": 131,
+        "adaptive_drafting": true,
+        "draft_acceptance": 0.9643765903307888,
+        "acceptance_by_depth": [
+          1.0,
+          0.9694656488549618,
+          0.9236641221374046
+        ],
+        "draft_seconds": 1.7413619959988864,
+        "verify_seconds": 19.327223501051776,
+        "draft_cache_sync_seconds": 0.3667052920063725,
+        "cache_finalize_seconds": 0.07347716699587181
+      },
+      "reference_decode_tps": 18.09768613764954,
+      "decode_tps_increase_percent": 31.143534226250004,
+      "output_ids_sha256": "9fc68342f86fccdcd0400b830ef88e40432cf54ee99813f646029065caf30852",
+      "all_logprobs_and_cache_arrays_finite": true,
+      "cache_offsets_correct": true
+    }
+  ],
+  "quality": {
+    "method": "Manual reading of all four 512-token code replies against the frozen input code and previous normal/MTP answers. Closed arithmetic answers are checked against known results.",
+    "normal": {
+      "meaning_close": true,
+      "correct_k3_k4_and_shared_offset": true,
+      "correct_cache_admission": true,
+      "correct_fused_grid": true,
+      "helper_definitions_present": true,
+      "unsupported_claim": "The near-two-times cache memory estimate is not established for the stated 32 GiB cache and 4.52 GiB layer."
+    },
+    "mtp_first": {
+      "meaning_close": true,
+      "unverified_claim": "The reply calls non-resident decode dominated by synchronous loads; this test used resident mode."
+    },
+    "mtp_followup": {
+      "meaning_close": true,
+      "material_error": "The generated fused grid uses features // 288 instead of features // 128 * 288.",
+      "quality_regression_relative_to_previous_mtp": true
+    },
+    "generated_code_executed": false,
+    "limitations": [
+      "All four code replies stop at 512 tokens.",
+      "The first review does not reach the requested 800-plus words.",
+      "Both follow-ups continue incomplete input code instead of explaining tests.",
+      "Two code tasks and two arithmetic tasks do not establish general model quality."
+    ],
+    "arithmetic_checks": [
+      {
+        "question": "A box has 18 bolts. You add 7 bolts and remove 9 bolts. How many bolts are in the box? Give only the number.",
+        "expected": "16",
+        "observed": "16",
+        "correct": true,
+        "finish_reason": "stop"
+      },
+      {
+        "question": "Compute 26 times 17. Give only the number.",
+        "expected": "442",
+        "observed": "442",
+        "correct": true,
+        "finish_reason": "stop"
+      }
+    ]
+  },
+  "rejected_f16_variant": {
+    "selected": false,
+    "procedure": "Three component layers, followed by one fresh production process at a 416 GiB limit.",
+    "requests": [
+      {
+        "request": "first",
+        "mode": "normal",
+        "decode_tps": 16.106786121967417,
+        "elapsed_seconds": 31.858441499993205,
+        "peak_gib": 391.7841926701367,
+        "speed_change_vs_selected_percent": 1.3230450850243214
+      },
+      {
+        "request": "first",
+        "mode": "mtp3",
+        "decode_tps": 14.053480970774793,
+        "elapsed_seconds": 36.460655834001955,
+        "peak_gib": 392.5329330917448,
+        "speed_change_vs_selected_percent": -5.352008106316431
+      },
+      {
+        "request": "followup",
+        "mode": "normal",
+        "decode_tps": 16.028364329011346,
+        "elapsed_seconds": 65.45209354200051,
+        "peak_gib": 407.8453031759709,
+        "speed_change_vs_selected_percent": 1.2768998261902142
+      },
+      {
+        "request": "followup",
+        "mode": "mtp3",
+        "decode_tps": 24.1358116924523,
+        "elapsed_seconds": 55.20068062499922,
+        "peak_gib": 408.49870529584587,
+        "speed_change_vs_selected_percent": 1.69321397997515
+      }
+    ],
+    "objective_answers_correct": 2,
+    "observed_quality": "Both first replies added false 1-bit claims. The normal first reply also added a false cache-loop failure. Both follow-ups used the correct fused launch size, including MTP.",
+    "decision": "Keep F32 native coefficients and operands. The small extra normal speed and lower memory did not justify the added first-reply source errors in these samples.",
+    "exactness_required": false,
+    "fixed_quality_or_speed_threshold": null
+  },
+  "verification": {
+    "portable_tests_passed": 693,
+    "private_fixture_tests_skipped": 9,
+    "subtests_passed": 23,
+    "metal_tests_enabled": true,
+    "installed_environments": 2,
+    "installed_runtime_files_match_model_test": 46,
+    "model_file_identities_unchanged": 236,
+    "dependencies_unchanged": true
+  },
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "f2b463df9ec078c99f0b8235f9748c9a1da5ee4c618542aac13a755afffa2425",
+    "exlr8/dense.py": "2e0e55830163de87947f3d514ed81451845e39332228b5f9a204b12d9a205792",
+    "exlr8/dense_trellis.py": "0a4cd4c30c2a56843fa51cb75189e7df96b2ddf3601fb419e76a96aeafbe818d",
+    "exlr8/dsa_indexed.py": "c2430551c6be873754bb356caab5711dd9cb8b0ebb62610ca04219e5d7aa5c4a",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "ae15591da49378ce0f6441d4a6253e61b9290ec62e4f721390b89002950c4d65",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "a630c4eb9bbca15267729069f7eb7b7088b85aa81901866b15841d3a3a0d3f62",
+    "exlr8/fast_norm.py": "c914982e68b9146e259f7ff23f84b626b2c77ab736dbd0e51ecec95440b13c79",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/kv_lookup.py": "523bf51ad05b6741cc2fac02cb89d84799ac0e634f2bf3b62d802498d861e7db",
+    "exlr8/model.py": "ac17d7eba4a07369623052fee340516e0fc7f47fa3f9a2fe0d19936935993def",
+    "exlr8/mtp.py": "60872be56ddd777d05cafc44216fd2be1d88cf828f7a39088a9ba008fc317d79",
+    "exlr8/native_affine.py": "3041a3ad3251257b0d8c3b9ee20595c6994850613323827357e1df7aa50ebe68",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "b4e49a2e8d14d758f7c4f4f87c8f89e612494620d3d718023e1cd939fb5de674",
+    "exlr8/metal/dsa_indexed_decode.metal": "e0d56c1bfb915271e21732dfec814d35dedbb00ce704bba31fef4960ce96fd1c",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/kv_lookup.metal": "3f976d406ef42fc843766581d338a87c038812ac1fa73f1dacee82a0bc81c9e9",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba"
+  }
+}

@@ -3,7 +3,8 @@
 The input norms, normalized target/recurrent states, and shared output
 norm follow vLLM's DeepSeek V3.2 MTP equations (Apache-2.0):
 https://github.com/vllm-project/vllm/tree/main/vllm/models/deepseek_v32/nvidia
-All output tokens are selected by the full target model.
+The full target model checks each proposal. Neural words use relaxed
+posterior acceptance; prompt matches use the target sampler.
 """
 
 from dataclasses import replace
@@ -11,13 +12,15 @@ import time
 
 import mlx.core as mx
 import mlx.nn as nn
-from mlx_lm.generate import GenerationResponse, generation_stream, wired_limit
+import numpy as np
+from mlx_lm.generate import GenerationResponse, generate_step, generation_stream, wired_limit
 from mlx_lm.models.base import create_attention_mask
 from mlx_lm.models.cache import CacheList, KVCache, trim_prompt_cache
 from mlx_lm.tokenizer_utils import TokenizerWrapper
 
 from .dense import DenseStore
 from .model import DecoderLayer
+from .prompt_lookup import PromptLookup
 
 
 class MTPState(CacheList):
@@ -125,13 +128,22 @@ class MTPRuntime(nn.Module):
         self.sync_draft_cache(state, step_size)
 
 
+def _neural_allowed(logprobs, tokens):
+    probabilities = mx.softmax(logprobs[:len(tokens)].astype(mx.float32), axis=-1)
+    entropy = -(probabilities * mx.log(probabilities + 1e-5)).sum(axis=-1)
+    threshold = mx.minimum(0.03, 0.1 * mx.exp(-entropy))
+    selected = mx.take_along_axis(probabilities,
+        mx.array(tokens, dtype=mx.uint32)[:, None], axis=-1).reshape(-1)
+    return (selected > threshold).tolist()
+
+
 def stream_generate(
     model, tokenizer, prompt, *, max_tokens=128, sampler=None,
-    prompt_cache=None, prefill_step_size=128, num_draft_tokens=3,
+    prompt_cache=None, prefill_step_size=128, num_draft_tokens=63,
     prompt_progress_callback=None, stream=generation_stream,
     **kwargs,
 ):
-    """Generate with verified MTP proposals; preserve the target sampler."""
+    """Verify prompt matches and accept plausible K3 words with the target."""
     from mlx_lm import stream_generate as ordinary_generate
 
     if (not isinstance(model, MTPRuntime) or num_draft_tokens <= 0
@@ -164,18 +176,79 @@ def stream_generate(
     initial_offset = cache[0][0].offset
     detokenizer = tokenizer.detokenizer
     detokenizer.reset()
+    response_stop_tokens = tokenizer.eos_token_ids | {tokenizer.convert_tokens_to_ids("<|assistant|>")}
+    response_stop_tokens.discard(tokenizer.unk_token_id)
+    control_tokens = set(tokenizer.all_special_ids) | response_stop_tokens
+    control_tokens.discard(tokenizer.unk_token_id)
     count = 0
     accepted_total = proposed_total = cycles = 0
+    non_greedy_accepted = 0
     proposed_by_depth = [0] * num_draft_tokens
     accepted_by_depth = [0] * num_draft_tokens
     draft_seconds = verify_seconds = sync_seconds = 0.0
-    direct_seconds = direct_passes = draft_cost = draft_tokens_checked = 0
+    direct_seconds = direct_passes = 0
+    costs = {"neural": [0.0, 0, 0], "lookup": [0.0, 0, 0]}
+    neural_limit = min(num_draft_tokens, 3)
+    lookup_limit = neural_limit
     measured_draft_passes = 0
+    ordinary_tokens = 0
+    ordinary_used = False
+    already_emitted = False
+    lookup_proposed = lookup_accepted = 0
     model._mtp_stats = {}
 
     def sample(logits):
         logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
         return sampler(logprobs), logprobs
+
+    def record_stats():
+        model._mtp_stats = {
+            "accepted_draft_tokens": accepted_total,
+            "non_greedy_accepted_tokens": non_greedy_accepted,
+            "typical_neural_acceptance": True,
+            "neural_limit_current": neural_limit,
+            "proposed_draft_tokens": proposed_total,
+            "verification_cycles": cycles,
+            "one_token_passes": direct_passes,
+            "ordinary_decode_tokens": ordinary_tokens,
+            "ordinary_decode_seconds": direct_seconds,
+            "lookup_proposed_tokens": lookup_proposed,
+            "lookup_accepted_tokens": lookup_accepted,
+            "measured_draft_passes": measured_draft_passes,
+            "adaptive_drafting": True,
+            "draft_acceptance": accepted_total / max(proposed_total, 1),
+            "acceptance_by_depth": [
+                hits / max(proposals, 1)
+                for hits, proposals in zip(accepted_by_depth, proposed_by_depth)
+            ],
+            "draft_seconds": draft_seconds,
+            "verify_seconds": verify_seconds,
+            "draft_cache_sync_seconds": sync_seconds,
+            "source_costs": {
+                name: {"seconds": seconds, "committed_tokens": committed, "passes": passes}
+                for name, (seconds, committed, passes) in costs.items()
+            },
+        }
+
+    def emit(token, logprobs, from_draft):
+        nonlocal count, finish_reason
+        count += 1
+        lookup.append(token)
+        if token in response_stop_tokens:
+            finish_reason = "stop"
+        else:
+            detokenizer.add_token(token)
+            if count == max_tokens:
+                finish_reason = "length"
+        if finish_reason is not None:
+            detokenizer.finalize()
+        return GenerationResponse(
+            text=detokenizer.last_segment, token=token, logprobs=logprobs,
+            from_draft=from_draft, prompt_tokens=tokens.size, prompt_tps=prompt_tps,
+            generation_tokens=count,
+            generation_tps=max(count - 1, 0) / max(time.perf_counter() - decode_start, 1e-9),
+            peak_memory=mx.get_peak_memory() / 1e9, finish_reason=finish_reason,
+        )
 
     with wired_limit(model, [stream]), mx.stream(stream):
         start = time.perf_counter()
@@ -194,6 +267,7 @@ def stream_generate(
         mx.eval(seed, seed_logprobs)
         progress(tokens.size, tokens.size)
         previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
+        lookup = PromptLookup(np.asarray(state.history.values)[0, 0, :state.history.offset, 0])
         prompt_seconds = time.perf_counter() - start
         prompt_tps = tokens.size / prompt_seconds
         decode_start = time.perf_counter()
@@ -201,48 +275,79 @@ def stream_generate(
         finish_reason = None
         try:
             while max_tokens < 0 or count < max_tokens:
-                for token, logprobs, from_draft in pending:
-                    count += 1
-                    if token in tokenizer.eos_token_ids:
-                        finish_reason = "stop"
-                    else:
-                        detokenizer.add_token(token)
-                        if count == max_tokens:
-                            finish_reason = "length"
-                    if finish_reason is not None:
-                        detokenizer.finalize()
-                    yield GenerationResponse(
-                        text=detokenizer.last_segment, token=token,
-                        logprobs=logprobs, from_draft=from_draft,
-                        prompt_tokens=tokens.size, prompt_tps=prompt_tps,
-                        generation_tokens=count,
-                        generation_tps=max(count - 1, 0) / max(time.perf_counter() - decode_start, 1e-9),
-                        peak_memory=mx.get_peak_memory() / 1e9,
-                        finish_reason=finish_reason,
-                    )
+                for token, logprobs, from_draft in ([] if already_emitted else pending):
+                    yield emit(token, logprobs, from_draft)
                     if finish_reason is not None:
                         return
+
+                # Compare each proposal source with the ordinary pipeline.
+                # Keep searching for prompt matches during ordinary generation.
+                remaining = -1 if max_tokens < 0 else max_tokens - count
+                limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
+                proposal = lookup.propose(limit)
+                slow = {name: passes >= (4 if name == "neural" else 1)
+                        and seconds / committed >= direct_seconds / max(direct_passes, 1)
+                        for name, (seconds, committed, passes) in costs.items()}
+                source = "lookup" if proposal and not slow["lookup"] else ("neural" if not slow["neural"] else None)
+                probe = direct_passes == 0
+                searching = source is None
+                if probe or searching:
+                    limit = min(8, remaining) if probe and remaining >= 0 else (8 if probe else remaining)
+                    before = cache[0][0].offset
+                    direct_start = time.perf_counter()
+                    ordinary_used = True
+                    ordinary = generate_step(
+                        mx.array([pending[-1][0]], mx.uint32), model, stream=stream,
+                        max_tokens=limit, sampler=sampler, prompt_cache=cache,
+                        prefill_step_size=prefill_step_size,
+                    )
+                    try:
+                        for token, logprobs in ordinary:
+                            ordinary_tokens += 1
+                            yield emit(token, logprobs, False)
+                            if finish_reason is not None:
+                                return
+                            if searching and not slow["lookup"] and lookup.propose(lookup_limit):
+                                break
+                    finally:
+                        ordinary.close()
+                        mx.eval([c.state for c in cache])
+                        direct_seconds += time.perf_counter() - direct_start
+                        direct_passes += cache[0][0].offset - before
+                        record_stats()
+                    # generate_step has already cached its final emitted token.
+                    # Leave that token pending for the next verified pass.
+                    trim_prompt_cache(cache, 1)
+                    model.sync_draft_cache(state, prefill_step_size)
+                    previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
+                    pending = [(token, logprobs, False)]
+                    already_emitted = True
+                    remaining = -1 if max_tokens < 0 else max_tokens - count
+                    limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
+                    proposal = lookup.propose(limit)
+                    source = "lookup" if proposal and not slow["lookup"] else ("neural" if not slow["neural"] else None)
+                    if source is None:
+                        continue
 
                 # The seed has already been emitted, but is not in the target
                 # cache yet. Every proposal is checked by the full target.
                 draft_offset = state.draft[0].offset
-                draft_tokens = []
                 draft_start = time.perf_counter()
-                y = mx.array([[pending[-1][0]]], dtype=mx.uint32)
-                draft_hidden = previous_hidden
-                # Measure one-token cost, then keep drafting only while its
-                # observed cost per committed token is lower.
-                budget = num_draft_tokens
-                if direct_passes == 0 or (measured_draft_passes
-                        and draft_cost / draft_tokens_checked >= direct_seconds / direct_passes):
-                    budget = 0
-                n_draft = budget if max_tokens < 0 else min(budget, max_tokens - count)
-                for _ in range(n_draft):
-                    draft_logits, draft_hidden = model.draft_step(y, draft_hidden, state.draft)
-                    y, _ = sample(draft_logits[:, -1, :])
-                    mx.eval(y)
-                    draft_tokens.append(int(y.item()))
-                    y = y.reshape(1, 1)
+                if source == "lookup":
+                    draft_tokens = proposal
+                    n_draft = len(draft_tokens)
+                    lookup_proposed += n_draft
+                else:
+                    draft_tokens = []
+                    y = mx.array([[pending[-1][0]]], dtype=mx.uint32)
+                    draft_hidden = previous_hidden
+                    n_draft = neural_limit if remaining < 0 else min(neural_limit, remaining)
+                    for _ in range(n_draft):
+                        draft_logits, draft_hidden = model.draft_step(y, draft_hidden, state.draft)
+                        y, _ = sample(draft_logits[:, -1, :])
+                        mx.eval(y)
+                        draft_tokens.append(int(y.item()))
+                        y = y.reshape(1, 1)
                 draft_seconds += time.perf_counter() - draft_start
                 proposed_total += n_draft
                 for depth in range(n_draft):
@@ -255,9 +360,19 @@ def stream_generate(
                 verify_seconds += time.perf_counter() - verify_start
                 predictions = predictions.tolist()
                 accepted = 0
-                while accepted < n_draft and predictions[accepted] == draft_tokens[accepted]:
+                allowed = _neural_allowed(logprobs, draft_tokens) if source == "neural" else [False] * n_draft
+                while accepted < n_draft:
+                    same = predictions[accepted] == draft_tokens[accepted]
+                    plausible = (allowed[accepted] and predictions[accepted] not in control_tokens
+                                 and draft_tokens[accepted] not in control_tokens)
+                    if not (same or plausible):
+                        break
+                    non_greedy_accepted += not same
                     accepted += 1
                 accepted_total += accepted
+                if source == "lookup":
+                    lookup_accepted += accepted
+                    lookup_limit = min(num_draft_tokens, lookup_limit * 4 + 3) if accepted == n_draft else neural_limit
                 for depth in range(accepted):
                     accepted_by_depth[depth] += 1
                 cycles += 1
@@ -271,33 +386,17 @@ def stream_generate(
                 sync_end = time.perf_counter()
                 sync_seconds += sync_end - sync_start
                 pass_seconds = sync_end - draft_start
-                if n_draft == 0:
-                    direct_seconds += pass_seconds
-                    direct_passes += 1
-                elif n_draft == num_draft_tokens:
-                    draft_cost += pass_seconds
-                    draft_tokens_checked += accepted + 1
+                if source == "lookup" or n_draft == neural_limit:
+                    costs[source][0] += pass_seconds
+                    costs[source][1] += accepted + 1
+                    costs[source][2] += 1
                     measured_draft_passes += 1
                 previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
                 pending = [
                     (draft_tokens[i], logprobs[i], True) for i in range(accepted)
                 ] + [(int(predictions[accepted]), logprobs[accepted], False)]
-                model._mtp_stats = {
-                    "accepted_draft_tokens": accepted_total,
-                    "proposed_draft_tokens": proposed_total,
-                    "verification_cycles": cycles,
-                    "one_token_passes": direct_passes,
-                    "measured_draft_passes": measured_draft_passes,
-                    "adaptive_drafting": True,
-                    "draft_acceptance": accepted_total / max(proposed_total, 1),
-                    "acceptance_by_depth": [
-                        hits / max(proposals, 1)
-                        for hits, proposals in zip(accepted_by_depth, proposed_by_depth)
-                    ],
-                    "draft_seconds": draft_seconds,
-                    "verify_seconds": verify_seconds,
-                    "draft_cache_sync_seconds": sync_seconds,
-                }
+                already_emitted = False
+                record_stats()
         finally:
             # The HTTP cache key includes every emitted token. A client can
             # stop within a verification pass, or after an uncached bonus.
@@ -309,5 +408,7 @@ def stream_generate(
             elif extra < 0:
                 model.forward_hidden(mx.array([[token]], dtype=mx.uint32), cache)
                 mx.eval([c.state for c in cache[:-1]], state.history.state)
+            if ordinary_used or extra < 0:
                 model.sync_draft_cache(state, prefill_step_size)
+            record_stats()
             model._mtp_stats["cache_finalize_seconds"] = time.perf_counter() - finalize_start
