@@ -124,7 +124,7 @@ Optimized resident mode defaults to a 440 GiB process budget and requires at lea
 
 Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use the original expert values. The benchmark tool now records the expert format and rejects these old prefixes. Saved reference prefixes remain compatible.
 
-Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. The requested draft count is a maximum. MTP measures cost and can stop proposals. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
+Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. The requested draft count is a maximum. MTP measures the ordinary generation pipeline with up to eight tokens. It then compares draft cost per committed token and returns to that pipeline if drafting costs more. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
 
@@ -183,7 +183,22 @@ A separate float16 variant saved about 21 GiB and added about 1.3% to normal dec
 
 The selected release passed 693 tests and 23 subtests with Metal enabled. Nine private-fixture tests were skipped. Both installed environments match all 46 tested runtime files. All 236 model-file identities and dependency versions stayed unchanged.
 
-See [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
+Version 0.1.3 keeps the four-bit expert format and fixes the MTP cost comparison and fallback. The earlier controller used one synchronous target call to measure ordinary generation. If it stopped drafting, it kept synchronous calls for every remaining token. The new controller measures the ordinary MLX-LM pipeline and uses that pipeline after costly draft verification.
+
+| MTP, draft limit three | Previous tokens/s | New tokens/s | Speed change |
+|---|---:|---:|---:|
+| First reply | 14.83 | 15.74 | +6.1% |
+| Follow-up | 23.81 | 23.64 | -0.7% |
+
+This test used the same saved affine4 prefix and canonical follow-up history. Only MTP generation changed. The main operators and MTP cache classes matched the saved prefix. Normal generation was not rerun. Each reply used 512 tokens. Warm-up and compilation were outside timing. The reference run was earlier; this was not a paired comparison. Combined request time fell by 2.0%, from 91.90 to 90.05 seconds. Peak memory was 429.65 GiB.
+
+The first answer kept the main code facts, but added an unsupported cache-accounting claim about padded slices. The follow-up used the correct fused launch size and a valid finish helper. It matched the earlier normal answer. Both answers stopped at 512 tokens; the follow-up still continued input code instead of explaining tests. The generated program was not executed. The tests cover cache state when generation stops at its length limit, reaches EOS, or the client closes the stream.
+
+A three-bit expert trial increased normal speed by about 7% and reduced peak memory by 83.48 GiB. It also added a generated helper syntax error and false weight and cache claims. The user selected four-bit weights with the MTP fix. A seven-token draft limit reduced speed on both tested requests. A float16 dense trial was slower in 11 of 12 component cases. These variants are not enabled.
+
+Version 0.1.3 passed 703 tests and 23 subtests with Metal enabled. Nine private-fixture tests were skipped. Both installed environments match all 46 tested runtime files. Dependency and CLI checks passed.
+
+See [MTP pipeline results](docs/mtp-pipeline-benchmark-results.json), [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 
 ```sh
 MLX_MAX_MB_PER_BUFFER=2048 MLX_MAX_OPS_PER_BUFFER=100 python tools/benchmark_runtime.py \

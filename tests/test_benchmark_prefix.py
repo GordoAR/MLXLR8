@@ -75,6 +75,20 @@ def test_legacy_prefix_reuse_requires_unchanged_expert_values(tmp_path, optimize
             assert ids == [1, 2, 3] and restored[0][0].offset == 2
 
 
+def test_affine3_prefix_is_rejected_for_affine4(tmp_path):
+    with mx.stream(mx.cpu):
+        cache = [CacheList(KVCache())]
+        values = mx.ones((1, 1, 2, 2))
+        cache[0][0].update_and_fetch(values, values)
+        path = tmp_path / "affine3.safetensors"
+        save_prompt_cache(str(path), cache, metadata={
+            "model": str(tmp_path.resolve()), "prompt_ids": "[1, 2, 3]",
+            "optimized": "True", "mtp": "False", "expert_format": "native_affine3_group128_f32",
+        })
+        with pytest.raises(ValueError, match="expert format"):
+            load_prefix(path, tmp_path, True, False)
+
+
 def test_layer_fidelity_keeps_causal_inputs_and_restores_hooks():
     from exlr8 import model as model_module
     from test_model import fixtures

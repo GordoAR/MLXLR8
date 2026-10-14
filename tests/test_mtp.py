@@ -332,4 +332,56 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
         assert model._mtp_stats["measured_draft_passes"] > 1
     else:
         assert model._mtp_stats["measured_draft_passes"] == 1
-        assert all(rows == 1 for rows in calls[4:])
+        wide = [i for i, rows in enumerate(calls) if rows > 1]
+        assert len(wide) == 1
+        assert all(rows == 1 for rows in calls[wide[0] + 1:])
+
+
+@pytest.mark.parametrize("cap", [1, 3, 7])
+@pytest.mark.parametrize("ending", ["length", "eos", "close"])
+def test_slow_draft_uses_ordinary_pipeline_and_preserves_stream_and_cache(monkeypatch, cap, ending):
+    import exlr8.mtp as mtp_module
+    from mlx_lm.generate import generate_step
+
+    model = DraftRuntime((0, 1, 2))
+    clock = [0.0]
+    monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
+    forward = model.target.forward_hidden
+    draft = model.draft_step
+
+    def target(inputs, cache):
+        clock[0] += 1.0 if inputs.shape[1] == 1 else 2.0 * inputs.shape[1]
+        return forward(inputs, cache)
+
+    def propose(*args):
+        clock[0] += .1
+        return draft(*args)
+
+    pipeline_calls = []
+    def pipeline(*args, **kwargs):
+        pipeline_calls.append(kwargs["max_tokens"])
+        yield from generate_step(*args, **kwargs)
+
+    model.target.forward_hidden = target
+    model.draft_step = propose
+    monkeypatch.setattr(mtp_module, "generate_step", pipeline, raising=False)
+    cache = model.make_cache()
+    prompt = [1, 2]
+    generator = stream_generate(model, tokenizer(eos=6 if ending == "eos" else 9), prompt,
+        max_tokens=40, prompt_cache=cache, num_draft_tokens=cap)
+    if ending == "close":
+        responses = [next(generator) for _ in range(15)]
+        generator.close()
+    else:
+        responses = list(generator)
+    tokens = [row.token for row in responses]
+    assert tokens == expected_tokens(prompt, len(tokens))
+    assert [row.generation_tokens for row in responses] == list(range(1, len(tokens) + 1))
+    assert all(row.prompt_tokens == len(prompt) for row in responses)
+    assert_cache(cache, [*prompt, *tokens])
+    assert pipeline_calls
+    if ending == "length":
+        assert len(pipeline_calls) == 2
+        assert len(tokens) == 40 and responses[-1].finish_reason == "length"
+    elif ending == "eos":
+        assert tokens[-1] == 6 and responses[-1].finish_reason == "stop"

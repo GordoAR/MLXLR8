@@ -11,7 +11,7 @@ import time
 
 import mlx.core as mx
 import mlx.nn as nn
-from mlx_lm.generate import GenerationResponse, generation_stream, wired_limit
+from mlx_lm.generate import GenerationResponse, generate_step, generation_stream, wired_limit
 from mlx_lm.models.base import create_attention_mask
 from mlx_lm.models.cache import CacheList, KVCache, trim_prompt_cache
 from mlx_lm.tokenizer_utils import TokenizerWrapper
@@ -171,11 +171,51 @@ def stream_generate(
     draft_seconds = verify_seconds = sync_seconds = 0.0
     direct_seconds = direct_passes = draft_cost = draft_tokens_checked = 0
     measured_draft_passes = 0
+    ordinary_tokens = 0
+    ordinary_used = False
     model._mtp_stats = {}
 
     def sample(logits):
         logprobs = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
         return sampler(logprobs), logprobs
+
+    def record_stats():
+        model._mtp_stats = {
+            "accepted_draft_tokens": accepted_total,
+            "proposed_draft_tokens": proposed_total,
+            "verification_cycles": cycles,
+            "one_token_passes": direct_passes,
+            "ordinary_decode_tokens": ordinary_tokens,
+            "measured_draft_passes": measured_draft_passes,
+            "adaptive_drafting": True,
+            "draft_acceptance": accepted_total / max(proposed_total, 1),
+            "acceptance_by_depth": [
+                hits / max(proposals, 1)
+                for hits, proposals in zip(accepted_by_depth, proposed_by_depth)
+            ],
+            "draft_seconds": draft_seconds,
+            "verify_seconds": verify_seconds,
+            "draft_cache_sync_seconds": sync_seconds,
+        }
+
+    def emit(token, logprobs, from_draft):
+        nonlocal count, finish_reason
+        count += 1
+        if token in tokenizer.eos_token_ids:
+            finish_reason = "stop"
+        else:
+            detokenizer.add_token(token)
+            if count == max_tokens:
+                finish_reason = "length"
+        if finish_reason is not None:
+            detokenizer.finalize()
+        return GenerationResponse(
+            text=detokenizer.last_segment, token=token, logprobs=logprobs,
+            from_draft=from_draft, prompt_tokens=tokens.size, prompt_tps=prompt_tps,
+            generation_tokens=count,
+            generation_tps=max(count - 1, 0) / max(time.perf_counter() - decode_start, 1e-9),
+            peak_memory=mx.get_peak_memory() / 1e9, finish_reason=finish_reason,
+        )
 
     with wired_limit(model, [stream]), mx.stream(stream):
         start = time.perf_counter()
@@ -202,26 +242,45 @@ def stream_generate(
         try:
             while max_tokens < 0 or count < max_tokens:
                 for token, logprobs, from_draft in pending:
-                    count += 1
-                    if token in tokenizer.eos_token_ids:
-                        finish_reason = "stop"
-                    else:
-                        detokenizer.add_token(token)
-                        if count == max_tokens:
-                            finish_reason = "length"
-                    if finish_reason is not None:
-                        detokenizer.finalize()
-                    yield GenerationResponse(
-                        text=detokenizer.last_segment, token=token,
-                        logprobs=logprobs, from_draft=from_draft,
-                        prompt_tokens=tokens.size, prompt_tps=prompt_tps,
-                        generation_tokens=count,
-                        generation_tps=max(count - 1, 0) / max(time.perf_counter() - decode_start, 1e-9),
-                        peak_memory=mx.get_peak_memory() / 1e9,
-                        finish_reason=finish_reason,
-                    )
+                    yield emit(token, logprobs, from_draft)
                     if finish_reason is not None:
                         return
+
+                # Measure the ordinary pipeline, then use it for the remaining
+                # tokens if drafting costs more per committed token.
+                if direct_passes == 0 or (measured_draft_passes
+                        and draft_cost / draft_tokens_checked >= direct_seconds / direct_passes):
+                    probe = direct_passes == 0
+                    remaining = -1 if max_tokens < 0 else max_tokens - count
+                    limit = min(8, remaining) if probe and remaining >= 0 else (8 if probe else remaining)
+                    before = cache[0][0].offset
+                    direct_start = time.perf_counter()
+                    ordinary_used = True
+                    ordinary = generate_step(
+                        mx.array([pending[-1][0]], mx.uint32), model, stream=stream,
+                        max_tokens=limit, sampler=sampler, prompt_cache=cache,
+                        prefill_step_size=prefill_step_size,
+                    )
+                    try:
+                        for token, logprobs in ordinary:
+                            ordinary_tokens += 1
+                            yield emit(token, logprobs, False)
+                            if finish_reason is not None:
+                                return
+                    finally:
+                        ordinary.close()
+                        mx.eval([c.state for c in cache])
+                        direct_seconds += time.perf_counter() - direct_start
+                        direct_passes += cache[0][0].offset - before
+                        record_stats()
+                    if not probe:
+                        return
+                    # generate_step has already cached its final emitted token.
+                    # Leave that token pending for the next verified pass.
+                    trim_prompt_cache(cache, 1)
+                    model.sync_draft_cache(state, prefill_step_size)
+                    previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
+                    pending = [(token, logprobs, False)]
 
                 # The seed has already been emitted, but is not in the target
                 # cache yet. Every proposal is checked by the full target.
@@ -230,13 +289,7 @@ def stream_generate(
                 draft_start = time.perf_counter()
                 y = mx.array([[pending[-1][0]]], dtype=mx.uint32)
                 draft_hidden = previous_hidden
-                # Measure one-token cost, then keep drafting only while its
-                # observed cost per committed token is lower.
-                budget = num_draft_tokens
-                if direct_passes == 0 or (measured_draft_passes
-                        and draft_cost / draft_tokens_checked >= direct_seconds / direct_passes):
-                    budget = 0
-                n_draft = budget if max_tokens < 0 else min(budget, max_tokens - count)
+                n_draft = num_draft_tokens if max_tokens < 0 else min(num_draft_tokens, max_tokens - count)
                 for _ in range(n_draft):
                     draft_logits, draft_hidden = model.draft_step(y, draft_hidden, state.draft)
                     y, _ = sample(draft_logits[:, -1, :])
@@ -271,10 +324,7 @@ def stream_generate(
                 sync_end = time.perf_counter()
                 sync_seconds += sync_end - sync_start
                 pass_seconds = sync_end - draft_start
-                if n_draft == 0:
-                    direct_seconds += pass_seconds
-                    direct_passes += 1
-                elif n_draft == num_draft_tokens:
+                if n_draft == num_draft_tokens:
                     draft_cost += pass_seconds
                     draft_tokens_checked += accepted + 1
                     measured_draft_passes += 1
@@ -282,22 +332,7 @@ def stream_generate(
                 pending = [
                     (draft_tokens[i], logprobs[i], True) for i in range(accepted)
                 ] + [(int(predictions[accepted]), logprobs[accepted], False)]
-                model._mtp_stats = {
-                    "accepted_draft_tokens": accepted_total,
-                    "proposed_draft_tokens": proposed_total,
-                    "verification_cycles": cycles,
-                    "one_token_passes": direct_passes,
-                    "measured_draft_passes": measured_draft_passes,
-                    "adaptive_drafting": True,
-                    "draft_acceptance": accepted_total / max(proposed_total, 1),
-                    "acceptance_by_depth": [
-                        hits / max(proposals, 1)
-                        for hits, proposals in zip(accepted_by_depth, proposed_by_depth)
-                    ],
-                    "draft_seconds": draft_seconds,
-                    "verify_seconds": verify_seconds,
-                    "draft_cache_sync_seconds": sync_seconds,
-                }
+                record_stats()
         finally:
             # The HTTP cache key includes every emitted token. A client can
             # stop within a verification pass, or after an uncached bonus.
@@ -309,5 +344,7 @@ def stream_generate(
             elif extra < 0:
                 model.forward_hidden(mx.array([[token]], dtype=mx.uint32), cache)
                 mx.eval([c.state for c in cache[:-1]], state.history.state)
+            if ordinary_used or extra < 0:
                 model.sync_draft_cache(state, prefill_step_size)
+            record_stats()
             model._mtp_stats["cache_finalize_seconds"] = time.perf_counter() - finalize_start
