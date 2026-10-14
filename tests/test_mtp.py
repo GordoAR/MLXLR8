@@ -343,6 +343,17 @@ def test_slow_draft_uses_ordinary_pipeline_and_preserves_stream_and_cache(monkey
     import exlr8.mtp as mtp_module
     from mlx_lm.generate import generate_step
 
+    class NoMatch:
+        def __init__(self, tokens):
+            pass
+
+        def append(self, token):
+            pass
+
+        def propose(self, limit):
+            return []
+
+    monkeypatch.setattr(mtp_module, "PromptLookup", NoMatch)
     model = DraftRuntime((0, 1, 2))
     clock = [0.0]
     monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])

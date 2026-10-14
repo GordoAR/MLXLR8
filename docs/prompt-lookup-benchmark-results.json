@@ -1,0 +1,207 @@
+{
+  "status": "affine4_prompt_lookup_runtime_selected_and_verified",
+  "version": "0.1.4",
+  "hardware": {
+    "device": "Apple M3 Ultra",
+    "memory_gib": 512,
+    "memory_limit_gib": 440,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048
+  },
+  "versions": {
+    "mlx": "0.32.3",
+    "mlx-lm": "0.32.0",
+    "numpy": "2.4.6",
+    "safetensors": "0.8.0"
+  },
+  "format": {
+    "bits": 4,
+    "group_size": 128,
+    "coefficient_dtype": "float32",
+    "qmm_operand_dtype": "float32",
+    "qmm_result_dtype": "float32",
+    "draft_layer": "Original K3 trellis",
+    "changed_from_0_1_2": false,
+    "original_model_files_changed": false
+  },
+  "method": "Integrated prompt lookup and K3 proposals, verified by all 78 target layers. Four-bit main weights, target operators, cached prefix, and canonical history remain. The 4469-token follow-up preparation is inside request timing. Compilation, warmup, hashes, and finite checks are outside timing. No normal control is rerun; earlier speeds are separate references.",
+  "profile": {
+    "mtp": true,
+    "main_layers": 78,
+    "retained_dense_k4": 151,
+    "rms_fused_layers": 78,
+    "attention_lookup_layers": 78
+  },
+  "load_seconds_excluded_from_request": 162.8177549999964,
+  "requests": [
+    {
+      "request": "first",
+      "mode": "verified_prompt_and_k3",
+      "proposal_limit": 63,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "input_tokens": 1,
+      "cached_tokens_before": 23860,
+      "prefill_seconds": 0.14137233400833793,
+      "decode_seconds": 33.35111562500242,
+      "decode_tps": 15.321826284483187,
+      "elapsed_seconds": 33.49248795901076,
+      "peak_gib": 415.491460012272,
+      "active_gib": 413.0300112478435,
+      "reference_decode_tps": 15.741446565440395,
+      "decode_tps_change_percent": -2.6657034295594184,
+      "output_ids_sha256": "4fd3fc1447f054b1695b13c1a78357c65c74d62aff465c4bc83f6a6da986781a",
+      "output_text_sha256": "c7a428a29192f7f08f199e36b9e5d0991160015da973d21ebf932197f97933c3",
+      "statistics": {
+        "accepted_draft_tokens": 4,
+        "proposed_draft_tokens": 72,
+        "verification_cycles": 4,
+        "one_token_passes": 506,
+        "ordinary_decode_tokens": 503,
+        "lookup_proposed_tokens": 63,
+        "lookup_accepted_tokens": 1,
+        "measured_draft_passes": 4,
+        "adaptive_drafting": true,
+        "draft_acceptance": 0.05555555555555555,
+        "draft_seconds": 0.03917366699897684,
+        "verify_seconds": 1.3775159170036204,
+        "draft_cache_sync_seconds": 0.010177332995226607,
+        "cache_finalize_seconds": 0.009118749992921948
+      },
+      "all_logprobs_and_cache_arrays_finite": true,
+      "target_cache_offsets": [
+        24373
+      ]
+    },
+    {
+      "request": "followup",
+      "mode": "verified_prompt_and_k3",
+      "proposal_limit": 63,
+      "completion_tokens": 512,
+      "finish_reason": "length",
+      "input_tokens": 4469,
+      "cached_tokens_before": 24373,
+      "prefill_seconds": 35.93915299999935,
+      "decode_seconds": 8.63365779099695,
+      "decode_tps": 59.186964826526165,
+      "elapsed_seconds": 44.5728107909963,
+      "peak_gib": 429.6037724483758,
+      "active_gib": 416.02443651109934,
+      "reference_decode_tps": 23.637502431858316,
+      "decode_tps_change_percent": 150.394325699803,
+      "output_ids_sha256": "d8e794fd2c585113be2134070dba230039984f87efc0aa28256f234175f3347e",
+      "output_text_sha256": "97c520839743e9a22712ec725b6e8390986ead11501df3a99df766b8bc08c1d8",
+      "statistics": {
+        "accepted_draft_tokens": 496,
+        "proposed_draft_tokens": 496,
+        "verification_cycles": 8,
+        "one_token_passes": 9,
+        "ordinary_decode_tokens": 8,
+        "lookup_proposed_tokens": 496,
+        "lookup_accepted_tokens": 496,
+        "measured_draft_passes": 8,
+        "adaptive_drafting": true,
+        "draft_acceptance": 1.0,
+        "draft_seconds": 3.4580007195472717e-06,
+        "verify_seconds": 7.941287707013544,
+        "draft_cache_sync_seconds": 0.0899695420084754,
+        "cache_finalize_seconds": 9.291994501836598e-06
+      },
+      "all_logprobs_and_cache_arrays_finite": true,
+      "target_cache_offsets": [
+        29354
+      ]
+    }
+  ],
+  "combined_request": {
+    "previous_seconds": 90.0526545009925,
+    "new_seconds": 78.06529875000706,
+    "less_time_percent": 13.311496276718115
+  },
+  "quality": {
+    "status": "manual_quality_review_complete",
+    "first": "Main K3/K4, shared-expert, cache admission, and stacking facts remain close. The I/O-dominance claim is not measured by this resident run.",
+    "followup": "Correct fused launch size and valid finish helper. The output matches the earlier normal follow-up.",
+    "finish_helper_syntax_valid": true,
+    "correct_fused_launch_size": true,
+    "arithmetic": [
+      {
+        "expected": "16",
+        "observed": "16",
+        "correct": true
+      },
+      {
+        "expected": "442",
+        "observed": "442",
+        "correct": true
+      }
+    ],
+    "generated_program_executed": false,
+    "limits": "Both code replies stop at 512 tokens. The review does not reach 800 words. The follow-up continues input code instead of the requested test explanation. These samples do not establish quality for other tasks.",
+    "selection": "Keep four-bit main weights and the 63-token prompt-lookup path. Its code-continuation gain is useful despite the 2.7 percent slower review."
+  },
+  "selection": {
+    "expert_format": "native_affine4_group128_f32",
+    "mtp_default": false,
+    "maximum_prompt_proposals": 63,
+    "maximum_k3_proposals": 3,
+    "reason": "Useful code-continuation speed gain; four-bit main weights retained."
+  },
+  "verification": {
+    "portable_tests_passed": 716,
+    "private_fixture_tests_skipped": 9,
+    "subtests_passed": 23,
+    "tested_runtime_files": 47,
+    "model_file_identities_unchanged": 236,
+    "sources_and_model_unchanged": true
+  },
+  "production_source_sha256": {
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/cli.py": "b89ff90b558cbe4a80fd8d981b952c5def1698ea6a1252553bafec7c2f1344ad",
+    "exlr8/dense.py": "2e0e55830163de87947f3d514ed81451845e39332228b5f9a204b12d9a205792",
+    "exlr8/dense_trellis.py": "0a4cd4c30c2a56843fa51cb75189e7df96b2ddf3601fb419e76a96aeafbe818d",
+    "exlr8/dsa_indexed.py": "c2430551c6be873754bb356caab5711dd9cb8b0ebb62610ca04219e5d7aa5c4a",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/experts.py": "ae15591da49378ce0f6441d4a6253e61b9290ec62e4f721390b89002950c4d65",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/fast_decode.py": "a630c4eb9bbca15267729069f7eb7b7088b85aa81901866b15841d3a3a0d3f62",
+    "exlr8/fast_norm.py": "c914982e68b9146e259f7ff23f84b626b2c77ab736dbd0e51ecec95440b13c79",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/kv_lookup.py": "523bf51ad05b6741cc2fac02cb89d84799ac0e634f2bf3b62d802498d861e7db",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/dense_k4_decode.metal": "b4e49a2e8d14d758f7c4f4f87c8f89e612494620d3d718023e1cd939fb5de674",
+    "exlr8/metal/dsa_indexed_decode.metal": "e0d56c1bfb915271e21732dfec814d35dedbb00ce704bba31fef4960ce96fd1c",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/kv_lookup.metal": "3f976d406ef42fc843766581d338a87c038812ac1fa73f1dacee82a0bc81c9e9",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba",
+    "exlr8/model.py": "ac17d7eba4a07369623052fee340516e0fc7f47fa3f9a2fe0d19936935993def",
+    "exlr8/mtp.py": "74ac57138515239bf0851089b39ca28dc15ad5f7c2e8d1b6d755912174c1b00d",
+    "exlr8/native_affine.py": "3041a3ad3251257b0d8c3b9ee20595c6994850613323827357e1df7aa50ebe68",
+    "exlr8/prompt_lookup.py": "9440b2c9d76563d008233c800b0621e63e0ae5314e0ef30fd81d0beb540b29c8",
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3"
+  }
+}

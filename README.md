@@ -124,7 +124,7 @@ Optimized resident mode defaults to a 440 GiB process budget and requires at lea
 
 Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use the original expert values. The benchmark tool now records the expert format and rejects these old prefixes. Saved reference prefixes remain compatible.
 
-Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. The requested draft count is a maximum. MTP measures the ordinary generation pipeline with up to eight tokens. It then compares draft cost per committed token and returns to that pipeline if drafting costs more. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
+Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens provide up to 63 proposals per pass. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. `--num-draft-tokens` sets the maximum for either source. MTP measures the ordinary generation pipeline with up to eight tokens and compares each source's cost per committed token. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
 
@@ -197,6 +197,19 @@ The first answer kept the main code facts, but added an unsupported cache-accoun
 A three-bit expert trial increased normal speed by about 7% and reduced peak memory by 83.48 GiB. It also added a generated helper syntax error and false weight and cache claims. The user selected four-bit weights with the MTP fix. A seven-token draft limit reduced speed on both tested requests. A float16 dense trial was slower in 11 of 12 component cases. These variants are not enabled.
 
 Version 0.1.3 passed 703 tests and 23 subtests with Metal enabled. Nine private-fixture tests were skipped. Both installed environments match all 46 tested runtime files. Dependency and CLI checks passed.
+
+Version 0.1.4 adds verified prompt lookup to `--mtp`. It proposes matching spans from the prior prompt and generated tokens, then verifies each token with all 78 main layers. It can continue the matching source span and return from ordinary generation when a new useful match appears. The prompt proposal maximum is 63; K3 proposals use at most three. Add `--mtp` to a `generate` or `serve` command to enable this path. MTP stays off by default.
+
+| Request | Earlier MTP tokens/s | New tokens/s | Speed change |
+|---|---:|---:|---:|
+| Review | 15.74 | 15.32 | -2.7% |
+| Code follow-up | 23.64 | 59.19 | +150.4% |
+
+Each reply generated 512 tokens from the same saved four-bit prefix and canonical history. The full runtime test includes the follow-up's 4,469 new input tokens in prompt and total request timing. Prompt work took 35.94 seconds; generation took 8.63 seconds. Total follow-up time fell from 57.49 to 44.57 seconds. Combined first-reply and follow-up time fell by 13.3%. Loading, compilation, warmup, hashes, and finite checks were outside request timing. The earlier runs were separate; normal generation was not rerun.
+
+All 496 code-follow-up proposals were accepted in eight verification passes. The output matches the earlier normal reply, with a valid finish helper and the correct fused launch size. The review's main code facts stay close, but its I/O-dominance claim is unmeasured by this resident test. The two arithmetic answers are correct. Both code replies still stop at 512 tokens, and the follow-up continues source code instead of giving the requested test explanation. The generated program was not executed. The 59.19 tokens/s result applies to this code continuation with useful source matches; the review speed remains 15.32 tokens/s.
+
+Peak MLX allocation was 429.60 GiB. Four-bit main weights and the original K3 layer are retained. All 236 model-file identities and dependency versions stayed unchanged. The portable build passed 716 tests and 23 subtests; nine private-fixture tests were skipped. Tests cover accepted and rejected prompt spans, cached token history, and length, EOS, and client stops within a verified span. See [prompt-lookup results](docs/prompt-lookup-benchmark-results.json).
 
 See [MTP pipeline results](docs/mtp-pipeline-benchmark-results.json), [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 
