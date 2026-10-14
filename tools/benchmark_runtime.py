@@ -28,7 +28,7 @@ def save_prefix(path, cache, ids, model_path, optimized):
     save_prompt_cache(str(path), serializable, metadata={
         "model": str(Path(model_path).resolve()), "prompt_ids": json.dumps(ids),
         "optimized": str(optimized), "mtp": str(isinstance(cache[-1], MTPState)),
-        "expert_format": "native_affine4_group128_f32" if optimized else "trellis",
+        "expert_format": "joined_mxfp4_folded32" if optimized else "trellis",
     })
 
 
@@ -36,7 +36,7 @@ def load_prefix(path, model_path, optimized, mtp):
     cache, metadata = load_prompt_cache(str(path), return_metadata=True)
     if metadata["model"] != str(Path(model_path).resolve()) or metadata["optimized"] != str(optimized):
         raise ValueError("The saved prefix uses a different model or kernel mode")
-    expert_format = "native_affine4_group128_f32" if optimized else "trellis"
+    expert_format = "joined_mxfp4_folded32" if optimized else "trellis"
     if metadata.get("expert_format", "trellis") != expert_format:
         raise ValueError("The saved prefix uses a different expert format; rebuild the prefix")
     ids = json.loads(metadata["prompt_ids"])

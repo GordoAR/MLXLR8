@@ -132,13 +132,18 @@ class ExpertLayer:
                 scale.nbytes for values in self.scales.values() for scale in values
             )
             if store.optimize and self.k == 4 and (self.hidden, self.intermediate) == (6144, 2048):
-                from .native_affine import NativeAffine
+                from .joined_mxfp4 import JoinedMXFP4
 
-                self.affine = NativeAffine(self)
+                self.affine = JoinedMXFP4(self)
                 store.resident_bytes += (
-                    sum(a.nbytes for values in self.affine.weights.values() for a in values)
+                    sum(a.nbytes for values in self.affine.weights.values() for a in values if a is not None)
                     - sum(a.nbytes for a in self.packed.values())
+                    + self.affine.unit.nbytes
                 )
+                for projection in ("gate", "up"):
+                    incoming, outgoing = self.scales[projection]
+                    store.resident_bytes -= incoming.nbytes
+                    self.scales[projection] = (None, outgoing)
                 del self.packed
                 mx.clear_cache()
 

@@ -211,6 +211,7 @@ def stream_generate(
             "verification_cycles": cycles,
             "one_token_passes": direct_passes,
             "ordinary_decode_tokens": ordinary_tokens,
+            "ordinary_decode_seconds": direct_seconds,
             "lookup_proposed_tokens": lookup_proposed,
             "lookup_accepted_tokens": lookup_accepted,
             "measured_draft_passes": measured_draft_passes,
@@ -223,6 +224,10 @@ def stream_generate(
             "draft_seconds": draft_seconds,
             "verify_seconds": verify_seconds,
             "draft_cache_sync_seconds": sync_seconds,
+            "source_costs": {
+                name: {"seconds": seconds, "committed_tokens": committed, "passes": passes}
+                for name, (seconds, committed, passes) in costs.items()
+            },
         }
 
     def emit(token, logprobs, from_draft):
@@ -367,7 +372,7 @@ def stream_generate(
                 accepted_total += accepted
                 if source == "lookup":
                     lookup_accepted += accepted
-                    lookup_limit = num_draft_tokens if accepted == n_draft else neural_limit
+                    lookup_limit = min(num_draft_tokens, lookup_limit * 4 + 3) if accepted == n_draft else neural_limit
                 for depth in range(accepted):
                     accepted_by_depth[depth] += 1
                 cycles += 1

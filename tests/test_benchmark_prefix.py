@@ -75,15 +75,16 @@ def test_legacy_prefix_reuse_requires_unchanged_expert_values(tmp_path, optimize
             assert ids == [1, 2, 3] and restored[0][0].offset == 2
 
 
-def test_affine3_prefix_is_rejected_for_affine4(tmp_path):
+@pytest.mark.parametrize("expert_format", ["native_affine3_group128_f32", "native_affine4_group128_f32"])
+def test_affine_prefix_is_rejected_for_joined_mxfp4(tmp_path, expert_format):
     with mx.stream(mx.cpu):
         cache = [CacheList(KVCache())]
         values = mx.ones((1, 1, 2, 2))
         cache[0][0].update_and_fetch(values, values)
-        path = tmp_path / "affine3.safetensors"
+        path = tmp_path / "affine.safetensors"
         save_prompt_cache(str(path), cache, metadata={
             "model": str(tmp_path.resolve()), "prompt_ids": "[1, 2, 3]",
-            "optimized": "True", "mtp": "False", "expert_format": "native_affine3_group128_f32",
+            "optimized": "True", "mtp": "False", "expert_format": expert_format,
         })
         with pytest.raises(ValueError, match="expert format"):
             load_prefix(path, tmp_path, True, False)

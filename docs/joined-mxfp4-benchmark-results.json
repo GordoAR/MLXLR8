@@ -1,0 +1,448 @@
+{
+  "status": "full_measurements_and_quality_review_complete",
+  "version": "0.1.7",
+  "selected_arm": "lookup_ramp",
+  "hardware": {
+    "device": "Apple M3 Ultra",
+    "unified_memory_gb": 512,
+    "memory_limit_gib": 440,
+    "ops_per_buffer": 100,
+    "mb_per_buffer": 2048
+  },
+  "format": {
+    "main_expert_mode": "MXFP4",
+    "bits": 4,
+    "group_size": 32,
+    "input_scale_magnitude": "Included before quantization",
+    "input_preparation": "Shared gate/up signed transform",
+    "gate_up": "Joined matrix operation",
+    "qmm_operand_dtype": "float32",
+    "qmm_result_dtype": "float32",
+    "transforms_output_scales_and_activation_casts": "Retained",
+    "draft_layer": "Original K3 trellis",
+    "original_model_files_changed": false
+  },
+  "selection": {
+    "main_layers": 78,
+    "main_expert_layers": 75,
+    "ordinary_probe_tokens": 8,
+    "neural_draft_limit": 3,
+    "prompt_lookup_limits": [
+      3,
+      15,
+      63
+    ],
+    "prompt_lookup_growth": "Full acceptance moves to the next limit. Rejection returns to three.",
+    "neural_cost_samples_before_fallback": 4,
+    "lookup_cost_samples_before_fallback": 1,
+    "posterior_threshold": "p > min(0.03, 0.1 * exp(-entropy))",
+    "special_token_acceptance": "Target choice",
+    "prompt_lookup_acceptance": "Target choice",
+    "mtp_enabled_by_default": false,
+    "exact_output_required": false,
+    "fixed_quality_or_speed_threshold": null,
+    "reason": "Select the measured decode gain and lower warm request memory. Function, JSON, incident, and email checks pass. Record the mixed source and cache quality. Retain the eight-token probe because one-token probe settings add word-limit faults and longer requests on some tasks."
+  },
+  "methodology": {
+    "request_count": 80,
+    "task_count": 8,
+    "setting_count": 5,
+    "samples_per_setting_and_task": 2,
+    "process_order": [
+      "current",
+      "joined_round_1",
+      "joined_round_2",
+      "current"
+    ],
+    "candidate_setting_order": "Rotate settings by task. Reverse task and setting order in the second joined process.",
+    "mtp": true,
+    "source_review_prefix_tokens": 23860,
+    "joined_prefix_rebuilt_with_own_expert_values": true,
+    "old_affine_cached_states_reused_for_joined_prefix": false,
+    "other_tasks": "New prompts with empty caches",
+    "request_timing_includes": "New prompt model processing and decode",
+    "request_timing_excludes": "Tokenization, loading, prefix preparation, compilation, warmup, cache cloning, hashes, and finite checks",
+    "stopping": "Natural stopping, subject to each task token limit",
+    "per_case_values": "Median of two measured requests. maximum_request_peak_gib is the maximum of the two whole-process request peaks.",
+    "decode_rate": "(completion_tokens - 1) / decode_seconds",
+    "weighted_decode_rate": "Sum of per-case median decode tokens divided by sum of per-case median decode seconds",
+    "output_lengths": "Include reasoning and stop tokens",
+    "final_answer_words": "Exclude reasoning; count whitespace-separated words",
+    "elapsed_gain_limit": "Output lengths differ. Request-time reduction does not measure kernel speed alone.",
+    "memory_scope": "Whole-process MLX peaks; added memory for each change was not measured",
+    "quality": "Check function behavior and JSON values on CPU. Read facts, useful findings, errors, omissions, and completeness. Compare each source review with the supplied old source.",
+    "second_round_review": "Reuse factual reading only after the complete final answer matches its own first-round answer. Text equality is not an acceptance condition.",
+    "release_integration_timed_separately": false
+  },
+  "arms": {
+    "current": "v0.1.6 affine four-bit main experts, original attention layouts, eight-token ordinary probe, direct prompt limit change from three to 63",
+    "candidate": "Joined MXFP4 main experts and attention layouts, eight-token ordinary probe, direct prompt limit change from three to 63",
+    "short_probe": "Joined MXFP4 main experts and attention layouts, one-token ordinary probe, direct prompt limit change from three to 63",
+    "lookup_ramp": "Joined MXFP4 main experts and attention layouts, eight-token ordinary probe, prompt limits three to 15 to 63",
+    "both": "Joined MXFP4 main experts and attention layouts, one-token ordinary probe, prompt limits three to 15 to 63"
+  },
+  "aggregate": {
+    "current": {
+      "samples": 16,
+      "summed_median_request_seconds": 75.37948483349464,
+      "summed_median_prefill_seconds": 8.186064395980793,
+      "summed_median_decode_seconds": 67.19342043751385,
+      "summed_median_completion_tokens": 1542.0,
+      "summed_median_decode_tokens": 1534.0,
+      "summed_median_final_answer_words": 723.0,
+      "weighted_decode_tps": 22.829616203665875,
+      "maximum_request_peak_gib": 413.8171537965536
+    },
+    "candidate": {
+      "samples": 16,
+      "summed_median_request_seconds": 69.3345724374667,
+      "summed_median_prefill_seconds": 7.662136916493182,
+      "summed_median_decode_seconds": 61.67243552097352,
+      "summed_median_completion_tokens": 1456.0,
+      "summed_median_decode_tokens": 1448.0,
+      "summed_median_final_answer_words": 728.0,
+      "weighted_decode_tps": 23.478884655164382,
+      "maximum_request_peak_gib": 392.0076656769961
+    },
+    "short_probe": {
+      "samples": 16,
+      "summed_median_request_seconds": 72.12597102053405,
+      "summed_median_prefill_seconds": 7.668040082513471,
+      "summed_median_decode_seconds": 64.45793093802058,
+      "summed_median_completion_tokens": 1529.0,
+      "summed_median_decode_tokens": 1521.0,
+      "summed_median_final_answer_words": 728.0,
+      "weighted_decode_tps": 23.59678596358476,
+      "maximum_request_peak_gib": 392.0127621665597
+    },
+    "lookup_ramp": {
+      "samples": 16,
+      "summed_median_request_seconds": 68.62906269002997,
+      "summed_median_prefill_seconds": 7.674046229964006,
+      "summed_median_decode_seconds": 60.95501646006596,
+      "summed_median_completion_tokens": 1460.0,
+      "summed_median_decode_tokens": 1452.0,
+      "summed_median_final_answer_words": 732.0,
+      "weighted_decode_tps": 23.820845015295212,
+      "maximum_request_peak_gib": 392.00728520564735
+    },
+    "both": {
+      "samples": 16,
+      "summed_median_request_seconds": 71.53606868803035,
+      "summed_median_prefill_seconds": 7.668057728529675,
+      "summed_median_decode_seconds": 63.86801095950068,
+      "summed_median_completion_tokens": 1527.0,
+      "summed_median_decode_tokens": 1519.0,
+      "summed_median_final_answer_words": 731.0,
+      "weighted_decode_tps": 23.783424239768678,
+      "maximum_request_peak_gib": 392.01271717250347
+    }
+  },
+  "selected_change": {
+    "weighted_decode_tps": 23.820845015295212,
+    "original_weighted_decode_tps": 22.829616203665875,
+    "decode_rate_gain_percent": 4.341854908056542,
+    "summed_median_request_seconds": 68.62906269002997,
+    "original_summed_median_request_seconds": 75.37948483349464,
+    "request_time_reduction_percent": 8.955251098326878,
+    "summed_median_completion_tokens": 1460.0,
+    "original_summed_median_completion_tokens": 1542.0,
+    "request_peak_gib": 392.00728520564735,
+    "original_request_peak_gib": 413.8171537965536,
+    "request_peak_reduction_gib": 21.809868590906262
+  },
+  "setup": {
+    "joined_prefix_preparation_seconds": 164.85384266698384,
+    "joined_prefix_preparation_peak_gib": 419.30827103741467,
+    "outside_request_timing": true
+  },
+  "quality_summary": {
+    "requests_reviewed": 80,
+    "function_answers": 10,
+    "function_behavior_cases_per_answer": 519,
+    "function_all_pass": true,
+    "json_answers": 30,
+    "json_values_all_pass": true,
+    "structured_and_code_format_checks": 40,
+    "formats_all_pass": true,
+    "manual_freeform_answers": 40,
+    "incident_and_email_given_facts_all_pass": true,
+    "source_and_cache_quality": "Mixed; see per-case limits",
+    "general_quality_gain_established": false,
+    "target_tokens_per_second": 50,
+    "target_met": false
+  },
+  "cases": [
+    {
+      "case": "source_review",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 21.164459049873216,
+          "elapsed_seconds": 24.28775302050053,
+          "prefill_seconds": 0.1434617079939926,
+          "decode_seconds": 24.14429131250654,
+          "completion_tokens": 512.0,
+          "final_answer_words": 336.0,
+          "maximum_request_peak_gib": 413.6092947162688
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 22.44893417787107,
+          "elapsed_seconds": 22.913885479516466,
+          "prefill_seconds": 0.15110802100389265,
+          "decode_seconds": 22.762777458512574,
+          "completion_tokens": 512.0,
+          "final_answer_words": 325.0,
+          "maximum_request_peak_gib": 392.00728520564735
+        }
+      },
+      "selected_decode_rate_change_percent": 6.0690194111318485,
+      "selected_request_time_change_percent": -5.6566267773903505,
+      "quality": {
+        "status": "mixed_incomplete",
+        "all_answers_stopped_at_token_limit": true,
+        "completion_token_limit": 512,
+        "current": "Useful partial review. False one-bit claim and unsupported layer-count, cache-failure, and memory-map claims.",
+        "selected": "Useful partial review. One-bit error remains. Wrong cache-loop and full-cache eviction claims are added. Unsupported layer-count and memory-map claims are removed."
+      }
+    },
+    {
+      "case": "merge_intervals",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 24.726723463114077,
+          "elapsed_seconds": 5.390005500506959,
+          "prefill_seconds": 1.0626770005037542,
+          "decode_seconds": 4.327328500003205,
+          "completion_tokens": 108.0,
+          "final_answer_words": 45.0,
+          "maximum_request_peak_gib": 412.73156870994717
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 24.74209886384734,
+          "elapsed_seconds": 5.308382729504956,
+          "prefill_seconds": 0.9837533129903022,
+          "decode_seconds": 4.324629416514654,
+          "completion_tokens": 108.0,
+          "final_answer_words": 45.0,
+          "maximum_request_peak_gib": 390.4860507203266
+        }
+      },
+      "selected_decode_rate_change_percent": 0.06218131066253463,
+      "selected_request_time_change_percent": -1.5143355789586144,
+      "quality": {
+        "status": "passed",
+        "function_answers": 10,
+        "behavior_cases_per_answer": 519,
+        "input_unchanged": true,
+        "code_only_format_passed": true
+      }
+    },
+    {
+      "case": "inventory_math",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 21.36592456210144,
+          "elapsed_seconds": 3.6807625210058177,
+          "prefill_seconds": 1.0597522080061026,
+          "decode_seconds": 2.621010312999715,
+          "completion_tokens": 57.0,
+          "final_answer_words": 6.0,
+          "maximum_request_peak_gib": 412.73156870994717
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 23.288099223748322,
+          "elapsed_seconds": 3.8196153545140987,
+          "prefill_seconds": 0.9855483125138562,
+          "decode_seconds": 2.8340670420002425,
+          "completion_tokens": 67.0,
+          "final_answer_words": 6.0,
+          "maximum_request_peak_gib": 390.4860507203266
+        }
+      },
+      "selected_decode_rate_change_percent": 8.996449725636513,
+      "selected_request_time_change_percent": 3.772393158098608,
+      "quality": {
+        "status": "passed",
+        "answers": 10,
+        "required_values_and_json_format_passed": true
+      }
+    },
+    {
+      "case": "delivery_reasoning",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 24.197256131057202,
+          "elapsed_seconds": 15.272151499986649,
+          "prefill_seconds": 1.0969863749778597,
+          "decode_seconds": 14.175165125008789,
+          "completion_tokens": 344.0,
+          "final_answer_words": 1.0,
+          "maximum_request_peak_gib": 412.8479098388925
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 24.14353071488184,
+          "elapsed_seconds": 10.503591749991756,
+          "prefill_seconds": 1.0186453539936338,
+          "decode_seconds": 9.484946395998122,
+          "completion_tokens": 230.0,
+          "final_answer_words": 1.0,
+          "maximum_request_peak_gib": 390.5587168717757
+        }
+      },
+      "selected_decode_rate_change_percent": -0.22203102651132678,
+      "selected_request_time_change_percent": -31.22388977086209,
+      "quality": {
+        "status": "passed",
+        "answers": 10,
+        "required_values_and_json_format_passed": true
+      }
+    },
+    {
+      "case": "invoice_extract",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 25.726687874560255,
+          "elapsed_seconds": 5.700892583001405,
+          "prefill_seconds": 1.1919496040063677,
+          "decode_seconds": 4.508942978995037,
+          "completion_tokens": 117.0,
+          "final_answer_words": 30.0,
+          "maximum_request_peak_gib": 413.1667797267437
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 25.881766808292138,
+          "elapsed_seconds": 5.581081958502182,
+          "prefill_seconds": 1.0991621459834278,
+          "decode_seconds": 4.481919812518754,
+          "completion_tokens": 117.0,
+          "final_answer_words": 30.0,
+          "maximum_request_peak_gib": 390.78838909231126
+        }
+      },
+      "selected_decode_rate_change_percent": 0.6027940109819996,
+      "selected_request_time_change_percent": -2.101611681940252,
+      "quality": {
+        "status": "passed",
+        "answers": 10,
+        "required_values_and_json_format_passed": true
+      }
+    },
+    {
+      "case": "incident_summary",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 25.49214892248846,
+          "elapsed_seconds": 5.086567770995316,
+          "prefill_seconds": 1.3599272295105038,
+          "decode_seconds": 3.7266405414848123,
+          "completion_tokens": 96.0,
+          "final_answer_words": 67.0,
+          "maximum_request_peak_gib": 413.8171537965536
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 25.224711414792264,
+          "elapsed_seconds": 5.493831729501835,
+          "prefill_seconds": 1.331245562498225,
+          "decode_seconds": 4.16258616700361,
+          "completion_tokens": 106.0,
+          "final_answer_words": 76.0,
+          "maximum_request_peak_gib": 391.4565966334194
+        }
+      },
+      "selected_decode_rate_change_percent": -1.049097541793631,
+      "selected_request_time_change_percent": 8.006655506072757,
+      "quality": {
+        "status": "passed",
+        "answers": 10,
+        "given_facts_passed": true,
+        "four_bullets_passed": true
+      }
+    },
+    {
+      "case": "cache_explanation",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 23.385658575081273,
+          "elapsed_seconds": 10.300498021009844,
+          "prefill_seconds": 0.9785384164861171,
+          "decode_seconds": 9.321959604523727,
+          "completion_tokens": 219.0,
+          "final_answer_words": 178.0,
+          "maximum_request_peak_gib": 412.46692015975714
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 24.671834411416228,
+          "elapsed_seconds": 10.06826739650569,
+          "prefill_seconds": 0.9079990624886705,
+          "decode_seconds": 9.160268334017019,
+          "completion_tokens": 227.0,
+          "final_answer_words": 177.0,
+          "maximum_request_peak_gib": 390.2938625048846
+        }
+      },
+      "selected_decode_rate_change_percent": 5.499848688056397,
+      "selected_request_time_change_percent": -2.2545572459746643,
+      "quality": {
+        "status": "mixed",
+        "requested_word_limit": 180,
+        "current_word_count": 178,
+        "selected_word_count": 177,
+        "selected_within_word_limit": true,
+        "current": "False claim that a first run is always slower. Live-process condition is missing. Resetting caches is said to ensure equal conditions without evidence.",
+        "selected": "Removes the always-slower claim. Live-process condition and repeated comparisons are missing.",
+        "one_token_probe_variants": "Both one-token probe settings use 190 words, exceed the word limit, and overstate control of cache effects. They give a useful repeated warm comparison."
+      }
+    },
+    {
+      "case": "maintenance_email",
+      "measurements": {
+        "current": {
+          "samples": 2,
+          "decode_tps": 20.146144681065934,
+          "elapsed_seconds": 5.660853916488122,
+          "prefill_seconds": 1.2927718544960953,
+          "decode_seconds": 4.368082061992027,
+          "completion_tokens": 89.0,
+          "final_answer_words": 60.0,
+          "maximum_request_peak_gib": 413.3719350853935
+        },
+        "lookup_ramp": {
+          "samples": 2,
+          "decode_tps": 24.57393026565356,
+          "elapsed_seconds": 4.940406291992986,
+          "prefill_seconds": 1.1965844584919978,
+          "decode_seconds": 3.743821833500988,
+          "completion_tokens": 93.0,
+          "final_answer_words": 72.0,
+          "maximum_request_peak_gib": 390.938504983671
+        }
+      },
+      "selected_decode_rate_change_percent": 21.978327142408617,
+      "selected_request_time_change_percent": -12.72683653603426,
+      "quality": {
+        "status": "passed_with_variant_limit",
+        "answers": 10,
+        "given_facts_passed": true,
+        "requested_word_limit": 100,
+        "all_within_word_limit": true,
+        "selected_word_count": 72,
+        "selected_additions": "No invented URL, cause, guarantee, or contact name.",
+        "both_variant_limit": "Adds a generic sender label that was not supplied."
+      }
+    }
+  ]
+}

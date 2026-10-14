@@ -73,6 +73,21 @@ def test_both_projection_outputs_match_native_bits(lookup_weights, rows, transpo
         np.testing.assert_array_equal(np.asarray(left.view(mx.uint16)), np.asarray(right.view(mx.uint16)))
 
 
+@pytest.mark.parametrize("rows", [2, 3, 4])
+def test_token_layout_projections_match_native_bits(lookup_weights, rows):
+    _, _, (wk_codes, wv_codes, table), wk, wv = lookup_weights
+    rng = np.random.default_rng(267 + rows)
+    q = mx.array(rng.normal(size=(1, rows, 64, 256)), mx.bfloat16)
+    value = mx.array(rng.normal(size=(1, 64, rows, 512)), mx.bfloat16)
+    queries = kv_lookup.query_projection_tokens(q, wk_codes, table)
+    expected_q = mx.concatenate([q[:, i:i + 1].swapaxes(1, 2)[..., :192] @ wk for i in range(rows)], axis=2)
+    output = kv_lookup.value_projection_tokens(value, wv_codes, table)
+    expected_v = mx.concatenate([value[:, :, i:i + 1] @ wv.swapaxes(-1, -2) for i in range(rows)], axis=2)
+    expected_v = expected_v.swapaxes(1, 2).reshape(1, rows, 16384)
+    for actual, expected in ((queries, expected_q), (output, expected_v)):
+        np.testing.assert_array_equal(np.asarray(actual.view(mx.uint16)), np.asarray(expected.view(mx.uint16)))
+
+
 @pytest.mark.parametrize("shape,dtype,enabled,use_lookup", [
     ((1, 64, 1, 256), mx.bfloat16, True, True),
     ((1, 64, 2, 256), mx.bfloat16, True, True),

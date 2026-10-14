@@ -48,9 +48,9 @@ def _decode_kernel(stage):
 
 
 def _decode_scores(scaled_q, scaled_qp, latent, pe, ids, valid):
-    rows = scaled_q.shape[0]
+    rows = scaled_q.shape[2]
     return _decode_kernel(0)(inputs=[scaled_q, scaled_qp, latent, pe, ids, valid],
-        template=[("T", mx.bfloat16)], grid=(64 * 128, 1, rows), threadgroup=(128, 1, 1),
+        template=[("T", mx.bfloat16), ("ROWS", rows)], grid=(64 * 128, 1, rows), threadgroup=(128, 1, 1),
         output_shapes=[(rows, 64, 2048)], output_dtypes=[mx.bfloat16])[0]
 
 
@@ -59,9 +59,9 @@ def _decode_pv(probabilities, latent, ids):
     partial = _decode_kernel(1)(inputs=[probabilities, latent, ids], template=[("T", mx.bfloat16)],
         grid=(16 * 128, 2, 4 * rows), threadgroup=(128, 1, 1),
         output_shapes=[(rows, 4, 64, 512)], output_dtypes=[mx.float32])[0]
-    return _decode_kernel(2)(inputs=[partial], template=[("T", mx.bfloat16)],
+    return _decode_kernel(2)(inputs=[partial], template=[("T", mx.bfloat16), ("ROWS", rows)],
         grid=(32768 * rows, 1, 1), threadgroup=(256, 1, 1),
-        output_shapes=[(rows, 64, 512)], output_dtypes=[mx.bfloat16])[0]
+        output_shapes=[(1, 64, rows, 512)], output_dtypes=[mx.bfloat16])[0]
 
 
 def _indexed_decode(q, q_pe, latent, k_pe, indices, mask, scale):
@@ -72,13 +72,9 @@ def _indexed_decode(q, q_pe, latent, k_pe, indices, mask, scale):
         row_mask = mx.broadcast_to(mask, (1, 1, rows, keys)).reshape(rows, keys)
         valid &= mx.take_along_axis(row_mask, ids, axis=-1)
     values, pe = latent.reshape(keys, 512), k_pe.reshape(keys, 64)
-    qr = q if rows == 1 else q.swapaxes(1, 2)
-    qp = q_pe if rows == 1 else q_pe.swapaxes(1, 2)
-    score = _decode_scores(qr.reshape(rows, 64, 512) * scale,
-                          qp.reshape(rows, 64, 64) * scale, values, pe, ids, valid)
+    score = _decode_scores(q * scale, q_pe * scale, values, pe, ids, valid)
     probabilities = mx.softmax(score, axis=-1, precise=True)
-    output = _decode_pv(probabilities, values, ids)
-    return output.reshape(1, 64, 1, 512) if rows == 1 else output.reshape(1, rows, 64, 512).swapaxes(1, 2)
+    return _decode_pv(probabilities, values, ids)
 
 
 def _supported(q, q_pe, latent, k_pe, indices, mask):

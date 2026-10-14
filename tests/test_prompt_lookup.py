@@ -64,7 +64,7 @@ def cycle_tokenizer(eos=29):
     return wrapped
 
 
-@pytest.mark.parametrize("cap", [1, 3, 63])
+@pytest.mark.parametrize("cap", [1, 2, 3, 7, 15, 63])
 @pytest.mark.parametrize("ending", ["length", "eos", "close"])
 def test_lookup_preserves_output_stream_and_cache(monkeypatch, cap, ending):
     model = cycle_model(monkeypatch)
@@ -75,6 +75,15 @@ def test_lookup_preserves_output_stream_and_cache(monkeypatch, cap, ending):
     model.draft_step = forbidden
     cache = model.make_cache()
     prompt = [*range(30), 0, 1]
+    rows = []
+    forward = model.forward_hidden
+
+    def record(inputs, cache):
+        if cache[0][0].offset >= len(prompt):
+            rows.append(inputs.shape[1])
+        return forward(inputs, cache)
+
+    model.forward_hidden = record
     tok = cycle_tokenizer(eos=18 if ending == "eos" else 99)
     generator = stream_generate(model, tok, prompt, max_tokens=80,
         prompt_cache=cache, num_draft_tokens=cap)
@@ -92,6 +101,7 @@ def test_lookup_preserves_output_stream_and_cache(monkeypatch, cap, ending):
     assert model._mtp_stats["lookup_accepted_tokens"] > 0
     assert model._mtp_stats["lookup_proposed_tokens"] == model._mtp_stats["lookup_accepted_tokens"]
     assert model._mtp_stats["ordinary_decode_tokens"] == 8
+    assert all(1 <= size <= cap + 1 for size in rows)
     if ending == "eos":
         assert actual[-1] == 18 and responses[-1].finish_reason == "stop"
     elif ending == "length":
@@ -135,6 +145,14 @@ def test_lookup_uses_cached_history_for_a_new_request(monkeypatch):
 @pytest.mark.parametrize("wrong", [False, True])
 def test_lookup_checks_a_short_span_before_a_long_copy(monkeypatch, wrong):
     model = cycle_model(monkeypatch)
+    limits = []
+    propose = PromptLookup.propose
+
+    def lookup(self, limit):
+        limits.append(limit)
+        return propose(self, limit)
+
+    monkeypatch.setattr(PromptLookup, "propose", lookup)
     prompt = [*range(30), 0, 1]
     if wrong:
         prompt[12] = 25
@@ -148,15 +166,40 @@ def test_lookup_checks_a_short_span_before_a_long_copy(monkeypatch, wrong):
 
     model.forward_hidden = record
     generator = stream_generate(model, cycle_tokenizer(eos=99), prompt,
-        max_tokens=80, prompt_cache=cache, num_draft_tokens=63)
+        max_tokens=160, prompt_cache=cache, num_draft_tokens=63)
     responses = [next(generator) for _ in range(10)]
     assert model._mtp_stats["lookup_proposed_tokens"] == 3
     assert model._mtp_stats["lookup_accepted_tokens"] == (1 if wrong else 3)
     responses.extend(generator)
     actual = [r.token for r in responses]
-    assert actual == [(2 + i) % 30 for i in range(80)]
+    assert actual == [(2 + i) % 30 for i in range(160)]
     assert_cache(cache, [*prompt, *actual])
     windows = [n for n in rows if n > 1]
     assert windows[1] == 4  # The first is prompt prefill.
     if not wrong:
-        assert any(n > 4 for n in windows[2:])
+        assert windows[2] == 16
+        assert limits.index(3) < limits.index(15) < limits.index(63)
+
+
+def test_lookup_ramp_resets_after_a_partial_long_match(monkeypatch):
+    model = cycle_model(monkeypatch)
+    prompt = [*range(30), 0, 1]
+    prompt[21] = 25
+    limits = []
+    propose = PromptLookup.propose
+
+    def lookup(self, limit):
+        limits.append(limit)
+        return propose(self, limit)
+
+    monkeypatch.setattr(PromptLookup, "propose", lookup)
+    cache = model.make_cache()
+    responses = list(stream_generate(model, cycle_tokenizer(eos=99), prompt,
+        max_tokens=80, prompt_cache=cache, num_draft_tokens=63))
+    actual = [r.token for r in responses]
+    assert actual == [(2 + i) % 30 for i in range(80)]
+    assert_cache(cache, [*prompt, *actual])
+    first_long = limits.index(15)
+    assert limits[first_long + 1] == 3
+    stats = model._mtp_stats
+    assert 0 < stats["lookup_accepted_tokens"] < stats["lookup_proposed_tokens"]
