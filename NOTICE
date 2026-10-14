@@ -90,3 +90,9 @@ Copyright 2025-2026 Apple Inc. MIT License. The local kernel shares each
 weight across four F32 input rows and preserves the existing sum order.
 Full license text is in exlr8/metal/dense_fp8_shared.metal.
 Source: https://github.com/ml-explore/mlx/tree/v0.32.3/mlx/backend/metal/kernels
+
+The four-row output MXFP4 kernel uses the MLX 0.32.3 E2M1 decoder.
+Copyright 2025-2026 Apple Inc. MIT License. The local kernel shares
+weights across four F32 input rows. Full license text is in
+exlr8/metal/dense_fp4_shared.metal.
+Source: https://github.com/ml-explore/mlx/tree/v0.32.3/mlx/backend/metal/kernels

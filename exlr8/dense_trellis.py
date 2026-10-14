@@ -92,3 +92,32 @@ def shared_fp8_linear(x, packed, exponents, suh, svh):
         grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
         output_shapes=[(4, n)], output_dtypes=[mx.float32])[0].reshape(1, 4, n)
     return (_hadamard(out) * svh.astype(mx.float32)).astype(x.dtype)
+
+
+def encode_mxfp4(packed, exponents):
+    inner = mx.dequantize(packed, scales=exponents, mode="mxfp8", dtype=mx.float32)
+    weights = mx.quantize(inner, mode="mxfp4")
+    mx.eval(weights)
+    return weights
+
+
+@lru_cache(maxsize=2)
+def _shared_fp4_kernel(k, n):
+    assert (k, n) in ((2048, 16384), (16384, 6144))
+    side = 1 if k == 2048 else 2
+    path = Path(__file__).with_name("metal") / "dense_fp4_shared.metal"
+    header, source = path.read_text().split("// KERNEL_ENTRY\n", 1)
+    header = f"constant constexpr int INPUT_K={k}, OUTPUT_N={n}, K4_SIDE={side};\n" + header
+    return mx.fast.metal_kernel(name=f"exlr8_dense_fp4_shared_k{k}_n{n}",
+        input_names=["xh", "weights", "scales"], output_names=["out"],
+        header=header, source=source)
+
+
+@mx.compile
+def shared_fp4_linear(x, packed, exponents, suh, svh):
+    k, n = x.shape[-1], exponents.shape[0]
+    xh = _hadamard(x.astype(mx.float32) * suh.astype(mx.float32))
+    out = _shared_fp4_kernel(k, n)(inputs=[xh.reshape(4, k), packed, exponents],
+        grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
+        output_shapes=[(4, n)], output_dtypes=[mx.float32])[0].reshape(1, 4, n)
+    return (_hadamard(out) * svh.astype(mx.float32)).astype(x.dtype)

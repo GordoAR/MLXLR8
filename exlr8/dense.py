@@ -17,7 +17,7 @@ _K4_DECODE_RECORDS = {
 
 
 class DenseLinear(nn.Module):
-    """Apply a stored matrix without changing its quantization."""
+    """Apply a stored matrix with selected inference kernels."""
 
     def __init__(self, record: tuple[int, ...], tensors: dict[str, mx.array], optimize=True,
                  decode_k4=False):
@@ -38,6 +38,10 @@ class DenseLinear(nn.Module):
                 )
                 if decode_k4 and self.record[:5] in _K4_DECODE_RECORDS.values():
                     self.packed_k4 = self.packed.reshape(-1).view(mx.uint32)
+                    if self.sharded_side == 2:
+                        from .dense_trellis import encode_mxfp4
+
+                        self.fp4_packed, self.fp4_exponents = encode_mxfp4(self.fp8_packed, self.exponents)
                 del self.packed
         elif self.format == 2:
             codes, scales = tensors["q4"], tensors["s4"]
@@ -110,6 +114,10 @@ class DenseLinear(nn.Module):
                         and 1 <= x.shape[1] <= 4 and x.shape[2] == self.in_features
                         and x.dtype == mx.bfloat16):
                     if x.shape[1] == 4:
+                        if self.sharded_side == 2:
+                            from .dense_trellis import shared_fp4_linear
+
+                            return shared_fp4_linear(x, self.fp4_packed, self.fp4_exponents, self.suh, self.svh)
                         from .dense_trellis import shared_fp8_linear
 
                         return shared_fp8_linear(x, self.fp8_packed, self.exponents, self.suh, self.svh)

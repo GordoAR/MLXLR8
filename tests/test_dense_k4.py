@@ -14,6 +14,8 @@ RECORDS = [(1, 16384, 2048, 4, 1), (1, 6144, 16384, 4, 2)]
 
 
 def fake_expansion(monkeypatch):
+    monkeypatch.setattr(dense_trellis, "encode_mxfp4", lambda *args: (
+        mx.zeros((1, 1), dtype=mx.uint32), mx.full((1, 1), 127, dtype=mx.uint8)))
     monkeypatch.setattr(dense_trellis, "expand_trellis", lambda *args: (
         mx.zeros((1, 1), dtype=mx.uint32), mx.full((1, 1), 127, dtype=mx.uint8)))
     return {"trellis": mx.array([1, 2, 3, 4], dtype=mx.uint8),
@@ -31,6 +33,7 @@ def fake_expansion(monkeypatch):
 def test_k4_retention_requires_supported_record(monkeypatch, record, enabled, optimize, retained):
     tensors = fake_expansion(monkeypatch)
     layer = dense.DenseLinear(record, tensors, optimize=optimize, decode_k4=enabled)
+    assert ("fp4_packed" in layer) == (retained and record[4] == 2)
     assert ("packed_k4" in layer) == retained
     assert ("packed_k4" in layer.parameters()) == retained
     if retained:
@@ -40,6 +43,7 @@ def test_k4_retention_requires_supported_record(monkeypatch, record, enabled, op
         assert "exponents" in layer.parameters()
 
 
+@pytest.mark.parametrize("record", RECORDS)
 @pytest.mark.parametrize("shape,dtype,use_k4", [
     ((1, 1, 2048), mx.bfloat16, True),
     ((1, 2, 2048), mx.bfloat16, True),
@@ -55,8 +59,9 @@ def test_k4_retention_requires_supported_record(monkeypatch, record, enabled, op
     ((1, 4, 2048), mx.float32, False),
     ((2, 4, 2048), mx.bfloat16, False),
 ])
-def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, use_k4):
-    layer = dense.DenseLinear(RECORDS[0], fake_expansion(monkeypatch), decode_k4=True)
+def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, record, shape, dtype, use_k4):
+    shape = (*shape[:-1], record[2])
+    layer = dense.DenseLinear(record, fake_expansion(monkeypatch), decode_k4=True)
     calls = []
     def selected(*args):
         calls.append("k4")
@@ -66,16 +71,21 @@ def test_k4_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtype, 
         calls.append("fp8")
         assert args[1] is layer.fp8_packed
         return args[0]
-    def shared(*args):
+    def shared_fp8(*args):
         calls.append("shared_fp8")
         assert args[1] is layer.fp8_packed
         return args[0]
+    def shared(*args):
+        calls.append("shared_fp4")
+        assert args[1] is layer.fp4_packed
+        return args[0]
     monkeypatch.setattr(dense_trellis, "k4_linear", selected)
     monkeypatch.setattr(dense_trellis, "expanded_linear", fallback)
-    monkeypatch.setattr(dense_trellis, "shared_fp8_linear", shared)
+    monkeypatch.setattr(dense_trellis, "shared_fp4_linear", shared)
+    monkeypatch.setattr(dense_trellis, "shared_fp8_linear", shared_fp8)
     x = mx.zeros(shape, dtype=dtype)
     assert layer(x) is x
-    expected = "shared_fp8" if use_k4 and shape[1] == 4 else "k4" if use_k4 else "fp8"
+    expected = ("shared_fp4" if record[4] == 2 else "shared_fp8") if use_k4 and shape[1] == 4 else "k4" if use_k4 else "fp8"
     assert calls == [expected]
 
 
@@ -166,6 +176,17 @@ def test_k4_real_shapes_match_native_inner_and_signed_full_output(record, rows):
     expected = mx.concatenate([dense_trellis.expanded_linear(
         x[:, i:i + 1, :], layer.fp8_packed, layer.exponents, layer.suh, layer.svh)
         for i in range(rows)], axis=1)
+    if rows == 4 and side == 2:
+        reference_inner = mx.quantized_matmul(xh, layer.fp4_packed,
+            scales=layer.fp4_exponents, mode="mxfp4")
+        shared_inner = dense_trellis._shared_fp4_kernel(k, n)(
+            inputs=[xh.reshape(rows, k), layer.fp4_packed, layer.fp4_exponents],
+            grid=(32, n // 8 * 2, 1), threadgroup=(32, 2, 1),
+            output_shapes=[(rows, n)], output_dtypes=[mx.float32])[0]
+        np.testing.assert_allclose(np.asarray(shared_inner),
+            np.asarray(reference_inner.reshape(rows, n)), rtol=2e-4, atol=1e-3)
+        expected = (dense_trellis._hadamard(reference_inner)
+                    * layer.svh.astype(mx.float32)).astype(x.dtype)
     mx.eval(actual_inner, expected_inner, actual, expected)
     parameters = layer.parameters()
     assert {"packed_k4", "fp8_packed", "exponents"} <= parameters.keys()
@@ -177,6 +198,10 @@ def test_k4_real_shapes_match_native_inner_and_signed_full_output(record, rows):
     assert bool(mx.all(mx.isfinite(actual_inner)).item())
     np.testing.assert_array_equal(np.asarray(actual_inner.view(mx.uint32)),
                                   np.asarray(expected_inner.view(mx.uint32)))
-    np.testing.assert_array_equal(np.asarray(actual.view(mx.uint16)),
-                                  np.asarray(expected.view(mx.uint16)))
+    if rows == 4 and side == 2:
+        np.testing.assert_allclose(np.asarray(actual.astype(mx.float32)),
+                                   np.asarray(expected.astype(mx.float32)), rtol=0.01, atol=0.015)
+    else:
+        np.testing.assert_array_equal(np.asarray(actual.view(mx.uint16)),
+                                      np.asarray(expected.view(mx.uint16)))
     assert dense_trellis._k4_kernel.cache_info().maxsize == 2
