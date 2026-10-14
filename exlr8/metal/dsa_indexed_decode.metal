@@ -31,11 +31,10 @@ const uint query = i / 32768u, column = i % 32768u;
 float total = 0.0f;
 for (uint part = 0; part < 4u; ++part)
     total += partial[(query * 4u + part) * 32768u + column];
-out[i] = T(total);
+const uint head = column / 512u, dim = column % 512u;
+out[(head * uint(ROWS) + query) * 512u + dim] = T(total);
 #elif STAGE == 0
 const uint query = threadgroup_position_in_grid.z;
-q += query * 32768u;
-qp += query * 4096u;
 ids += query * 2048u;
 valid += query * 2048u;
 out += query * 131072u;
@@ -63,7 +62,8 @@ for (uint phase = 0; phase < 2u; ++phase) {
     for (uint kb = 0; kb < dims; kb += BK) {
         threadgroup_barrier(mem_flags::mem_threadgroup);
         const uint ar = tid / (BK / A_READS), ad = (tid % (BK / A_READS)) * A_READS;
-        const device T* qs = phase == 0u ? q + ar * 512u + kb + ad : qp + ar * 64u + kb + ad;
+        const uint q_row = ar * uint(ROWS) + query;
+        const device T* qs = phase == 0u ? q + q_row * 512u + kb + ad : qp + q_row * 64u + kb + ad;
         #pragma clang loop unroll(full)
         for (uint j = 0; j < A_READS; j += 4u)
             *reinterpret_cast<threadgroup ushort4*>(qa + ar * 40u + ad + j) =

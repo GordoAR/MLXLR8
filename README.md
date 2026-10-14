@@ -4,7 +4,7 @@ Run GLM-5.3 EXLR8 **up1** weights on Apple Silicon with MLX. MLXLR8 adds the EXL
 
 The runtime serves a local OpenAI-compatible chat API. All 78 main layers run. MTP is off by default.
 
-Optimized resident mode converts the 75 main expert layers to native MLX affine 4-bit groups of 128 in RAM. This conversion changes weight values. Signed scales, transforms, and activation casts keep the existing path. Model files remain unchanged. SSD-cache mode keeps the original packed trellis weights. `--no-optimize` selects the original expert values and reference operators.
+Optimized resident mode converts the 75 main expert layers to native MLX MXFP4 groups of 32 in RAM. Gate and up projections share input preparation and one joined matrix operation. Input scale magnitudes are included before quantization. Signed transforms, output scales, and activation casts are retained. This conversion changes weight values. Model files remain unchanged. SSD-cache mode keeps the original packed trellis weights. `--no-optimize` selects the original expert values and reference operators.
 
 ## Requirements
 
@@ -120,11 +120,11 @@ Client settings: base URL `http://127.0.0.1:8081/v1`, model `glm-5.3-exlr8-up1`.
 
 EXLR8 selects `MLX_MAX_OPS_PER_BUFFER=100` before MLX loads. An explicit value takes precedence. The commands above select `MLX_MAX_MB_PER_BUFFER=2048`; MLX counts array elements for this setting despite its name.
 
-Optimized resident mode defaults to a 440 GiB process budget and requires at least 416 GiB. The reference resident mode defaults to 416 GiB and requires at least 384 GiB. Long prompts and larger input blocks need more temporary memory. Native affine weights use 4.5 bits per value, including float32 scales and biases. This adds 12.5% to the main expert weight storage. Conversion occurs during model loading and does not write to the checkpoint. The optional draft layer keeps its original K3 format.
+Optimized resident mode defaults to a 440 GiB process budget and requires at least 416 GiB. The reference resident mode defaults to 416 GiB and requires at least 384 GiB. Long prompts and larger input blocks need more temporary memory. MXFP4 stores four-bit values in groups of 32 with a shared scale exponent. Conversion occurs during model loading and does not write to the checkpoint. The optional draft layer keeps its original K3 format.
 
-Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use the original expert values. The benchmark tool now records the expert format and rejects these old prefixes. Saved reference prefixes remain compatible.
+Rebuild saved optimized benchmark prefixes from earlier versions. Their cached states use different expert values. The benchmark tool records the expert format and rejects old optimized prefixes. Saved reference prefixes remain compatible.
 
-Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens start with up to three proposals. A fully accepted span enables up to 63 proposals; rejection restores the short limit. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. `--num-draft-tokens` sets the maximum for either source. MTP measures the ordinary generation pipeline with up to eight tokens and compares each source's cost per committed token. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
+Resident mode enables the retained dense K4 path, including with `--mtp`. Dense K4 projections, residual-add/RMS fusion, and attention lookup support one to four BF16 token rows in a batch of one. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens start with up to three proposals. Full acceptance increases the limit to 15, then to 63. Rejection restores the three-proposal limit. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. `--num-draft-tokens` sets the maximum for either source. MTP measures the ordinary generation pipeline with up to eight tokens and compares each source's cost per committed token. It checks four K3 cost samples before it stops a costly neural source. The existing word acceptance rule is retained. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. MTP remains off by default.
 
 ## Checks and measured results
 
@@ -244,6 +244,29 @@ A second balanced comparison used two samples per arm on the same eight prompts.
 The generated interval functions passed all 519 behavior cases. Inventory, invoice and selected scheduling answers were correct. Incident and email answers retained the supplied facts. The faster review added false one-bit and 79+ layer claims and remained incomplete at 512 tokens. The selected explanation added the false claim that a first run is always slower. These errors are recorded with the speed gains; exact words are not an acceptance condition.
 
 New-prompt processing is inside request time. Source review uses the saved 23,860-token prefix. Loading, compilation, warmup and checks are outside timing. Peak allocation was 413.85 GiB. Version 0.1.6 passed 728 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. See [relaxed draft results](docs/relaxed-draft-benchmark-results.json) for all request measurements and answer checks. The measured private generator was ported directly; the integrated release was not timed in a separate full-model run.
+
+Version 0.1.7 uses joined four-bit MXFP4 main experts and new attention layouts. Gate and up projections share input preparation and one matrix operation. Attention uses joined buffers and token/head layouts within the existing guards. With `--mtp`, accepted prompt spans increase from three proposals to 15, then to 63. Rejection returns to three. The eight-token ordinary probe, three-token K3 limit, existing word acceptance rule, and four neural cost samples are retained. All 78 main layers and the original K3 draft layer remain. MTP stays off by default.
+
+The full-model comparison completed 80 requests across eight task types and five settings. Each setting used two samples per task. Four fresh processes ran in previous/joined/joined/previous order. The joined processes used balanced setting order. The source review used a 23,860-token prefix rebuilt with the new expert values. Other tasks used new prompts. New prompt processing is inside request time. Tokenization, loading, prefix preparation, compilation, warmup, cache cloning, and checks are outside timing.
+
+| Task | v0.1.6 median tokens/s | v0.1.7 median tokens/s | Speed change |
+|---|---:|---:|---:|
+| Source review | 21.16 | 22.45 | +6.1% |
+| Interval function | 24.73 | 24.74 | +0.1% |
+| Inventory arithmetic | 21.37 | 23.29 | +9.0% |
+| Scheduling | 24.20 | 24.14 | -0.2% |
+| Invoice extraction | 25.73 | 25.88 | +0.6% |
+| Incident summary | 25.49 | 25.22 | -1.0% |
+| Cache explanation | 23.39 | 24.67 | +5.5% |
+| Maintenance email | 20.15 | 24.57 | +22.0% |
+
+Weighted decode speed increased from 22.83 to 23.82 tokens/s, 4.34% faster. The sum of median request times fell from 75.38 to 68.63 seconds, 8.96% less. The sum of median output lengths also fell from 1,542 to 1,460 tokens. Output lengths include reasoning and stop tokens. Thus, the request-time reduction does not measure kernel speed alone. The 50 tokens/s target was not met.
+
+Warm request peak MLX allocation fell from 413.82 to 392.01 GiB, 21.81 GiB less. Fresh prefix preparation reached 419.31 GiB. These are whole-process peaks; they do not measure added memory for each change.
+
+All ten generated functions passed 519 behavior checks each. All 30 JSON answers had the required values. All 40 code/JSON format checks passed. Incident summaries and maintenance emails retained the given facts. The selected source review still makes a false one-bit claim and adds wrong cache-loop and full-cache eviction claims. It removes earlier unsupported layer-count and memory-map claims. All source reviews stop at 512 tokens and are incomplete. The selected cache explanation removes the false always-slower claim, but omits the live-process condition and repeated comparisons. Its 177 words fit the 180-word limit. The one-token probe trials used 190 words and exceeded that limit; they were not selected. These results do not show a general answer-quality gain. Exact wording is not an acceptance condition.
+
+See [joined MXFP4 results](docs/joined-mxfp4-benchmark-results.json) for the selected settings, all setting totals, per-task measurements, and quality limits. These measurements cover the tested full-model generator. The integrated lookup controller matches that generator in AST and bytecode. Version 0.1.7 passed 762 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. The release integration was not timed in a separate full-model run.
 
 See [MTP pipeline results](docs/mtp-pipeline-benchmark-results.json), [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 

@@ -40,18 +40,18 @@ def install(attention, operator):
     return True
 
 
-@lru_cache(maxsize=2)
-def _kernel(query):
+@lru_cache(maxsize=4)
+def _kernel(query, token_major=False):
     header, source = (Path(__file__).with_name("metal") / "kv_lookup.metal").read_text().split(
         "// KERNEL_ENTRY\n", 1)
-    header = (f"#define KEY_PROJECTION {int(query)}\n#define LOOKUP true\n"
+    header = (f"#define KEY_PROJECTION {int(query)}\n#define TOKEN_MAJOR {int(token_major)}\n#define LOOKUP true\n"
               "#define WEIGHT_TYPE uint8_t\n"
               f"#define INPUT_STRIDE {256 if query else 512}\n"
               f"#define INPUT_SIZE {192 if query else 512}\n"
               f"#define OUTPUT_SIZE {512 if query else 256}\n"
               f"#define OUTPUT_ROWS {192 if query else 256}\n"
               f"#define ROW_OFFSET {0 if query else 192}\n") + header
-    return mx.fast.metal_kernel(name=f"exlr8_kv_lookup_{'query' if query else 'value'}",
+    return mx.fast.metal_kernel(name=f"exlr8_kv_lookup_{'query' if query else 'value'}_{int(token_major)}",
                                input_names=["x", "weights", "table"], output_names=["out"],
                                header=header, source=source)
 
@@ -72,3 +72,19 @@ def value_projection(x, weights, table):
                           grid=(128 * 16, rows, 64),
                           threadgroup=(128, 1, 1), output_shapes=[(1, 64, rows, 256)],
                           output_dtypes=[mx.bfloat16])[0]
+
+
+@mx.compile
+def query_projection_tokens(x, weights, table):
+    rows = x.shape[1]
+    return _kernel(True, True)(inputs=[x, weights, table], template=[("TOKENS_PER_HEAD", rows)],
+                              grid=(128 * 8, rows, 64), threadgroup=(128, 1, 1),
+                              output_shapes=[(1, 64, rows, 512)], output_dtypes=[mx.bfloat16])[0]
+
+
+@mx.compile
+def value_projection_tokens(x, weights, table):
+    rows = x.shape[2]
+    return _kernel(False, True)(inputs=[x, weights, table], template=[("TOKENS_PER_HEAD", rows)],
+                               grid=(128 * 16, rows, 64), threadgroup=(128, 1, 1),
+                               output_shapes=[(1, rows, 16384)], output_dtypes=[mx.bfloat16])[0]
