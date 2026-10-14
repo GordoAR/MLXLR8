@@ -130,3 +130,33 @@ def test_lookup_uses_cached_history_for_a_new_request(monkeypatch):
     assert second_tokens == [(16 + i) % 30 for i in range(20)]
     assert model._mtp_stats["lookup_accepted_tokens"] > 0
     assert_cache(cache, [*prompt, *first_tokens, 14, 15, *second_tokens])
+
+
+@pytest.mark.parametrize("wrong", [False, True])
+def test_lookup_checks_a_short_span_before_a_long_copy(monkeypatch, wrong):
+    model = cycle_model(monkeypatch)
+    prompt = [*range(30), 0, 1]
+    if wrong:
+        prompt[12] = 25
+    cache = model.make_cache()
+    forward = model.forward_hidden
+    rows = []
+
+    def record(inputs, cache):
+        rows.append(inputs.shape[1])
+        return forward(inputs, cache)
+
+    model.forward_hidden = record
+    generator = stream_generate(model, cycle_tokenizer(eos=99), prompt,
+        max_tokens=80, prompt_cache=cache, num_draft_tokens=63)
+    responses = [next(generator) for _ in range(10)]
+    assert model._mtp_stats["lookup_proposed_tokens"] == 3
+    assert model._mtp_stats["lookup_accepted_tokens"] == (1 if wrong else 3)
+    responses.extend(generator)
+    actual = [r.token for r in responses]
+    assert actual == [(2 + i) % 30 for i in range(80)]
+    assert_cache(cache, [*prompt, *actual])
+    windows = [n for n in rows if n > 1]
+    assert windows[1] == 4  # The first is prompt prefill.
+    if not wrong:
+        assert any(n > 4 for n in windows[2:])

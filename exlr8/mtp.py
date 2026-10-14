@@ -174,6 +174,7 @@ def stream_generate(
     direct_seconds = direct_passes = 0
     costs = {"neural": [0.0, 0, 0], "lookup": [0.0, 0, 0]}
     neural_limit = min(num_draft_tokens, 3)
+    lookup_limit = neural_limit
     measured_draft_passes = 0
     ordinary_tokens = 0
     ordinary_used = False
@@ -259,7 +260,7 @@ def stream_generate(
                 # Compare each proposal source with the ordinary pipeline.
                 # Keep searching for prompt matches during ordinary generation.
                 remaining = -1 if max_tokens < 0 else max_tokens - count
-                limit = num_draft_tokens if remaining < 0 else min(num_draft_tokens, remaining)
+                limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
                 proposal = lookup.propose(limit)
                 slow = {name: passes and seconds / committed >= direct_seconds / max(direct_passes, 1)
                         for name, (seconds, committed, passes) in costs.items()}
@@ -282,7 +283,7 @@ def stream_generate(
                             yield emit(token, logprobs, False)
                             if finish_reason is not None:
                                 return
-                            if searching and not slow["lookup"] and lookup.propose(num_draft_tokens):
+                            if searching and not slow["lookup"] and lookup.propose(lookup_limit):
                                 break
                     finally:
                         ordinary.close()
@@ -298,7 +299,7 @@ def stream_generate(
                     pending = [(token, logprobs, False)]
                     already_emitted = True
                     remaining = -1 if max_tokens < 0 else max_tokens - count
-                    limit = num_draft_tokens if remaining < 0 else min(num_draft_tokens, remaining)
+                    limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
                     proposal = lookup.propose(limit)
                     source = "lookup" if proposal and not slow["lookup"] else ("neural" if not slow["neural"] else None)
                     if source is None:
@@ -340,6 +341,7 @@ def stream_generate(
                 accepted_total += accepted
                 if source == "lookup":
                     lookup_accepted += accepted
+                    lookup_limit = num_draft_tokens if accepted == n_draft else neural_limit
                 for depth in range(accepted):
                     accepted_by_depth[depth] += 1
                 cycles += 1
