@@ -224,6 +224,27 @@ The review keeps the main source facts but adds a conditional 1 GiB large-layer 
 
 The integrated generator matches the tested candidate. Version 0.1.5 passed 718 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. See [prompt-probe results](docs/prompt-probe-benchmark-results.json). The window-cost method was informed by [Tensorfold's planner](https://github.com/ashhart/TensorFold/blob/c126fe16e3f8d9bef4a620af34ff35aec0966af1/zig/src/core/lanes/plan_lanes.zig).
 
+Version 0.1.6 adds relaxed acceptance for ordinary K3 draft words. The main model checks each proposed word against its output distribution. Prompt matches still use the target choice. K3 stays at three proposals. The controller measures four neural passes before it stops a costly draft source. Add `--mtp` to enable this path; answers can differ. Four-bit main weights remain.
+
+The first balanced comparison used original/relaxed/relaxed/original order on eight task types:
+
+| Task | Original tokens/s | Relaxed tokens/s | Speed change |
+|---|---:|---:|---:|
+| Source review | 15.66 | 21.24 | +35.7% |
+| Interval function | 23.60 | 24.80 | +5.1% |
+| Inventory arithmetic | 20.34 | 21.38 | +5.1% |
+| Scheduling | 16.88 | 24.18 | +43.2% |
+| Invoice extraction | 25.78 | 25.68 | -0.4% |
+| Incident summary | 20.51 | 25.47 | +24.2% |
+| Cache explanation | 17.00 | 17.00 | +0.0% |
+| Maintenance email | 19.92 | 20.68 | +3.8% |
+
+A second balanced comparison used two samples per arm on the same eight prompts. Four neural cost samples increased cache-explanation speed from 16.98 to 23.29 tokens/s, 37.1% faster. Request time fell from 14.29 to 10.34 seconds. The selected version produced 20.09–25.67 tokens/s across these prompts. These results do not establish 50 tokens/s for general answers. The two comparisons used separate model loads; cross-comparison differences are not paired results.
+
+The generated interval functions passed all 519 behavior cases. Inventory, invoice and selected scheduling answers were correct. Incident and email answers retained the supplied facts. The faster review added false one-bit and 79+ layer claims and remained incomplete at 512 tokens. The selected explanation added the false claim that a first run is always slower. These errors are recorded with the speed gains; exact words are not an acceptance condition.
+
+New-prompt processing is inside request time. Source review uses the saved 23,860-token prefix. Loading, compilation, warmup and checks are outside timing. Peak allocation was 413.85 GiB. Version 0.1.6 passed 728 tests and 23 subtests with Metal enabled; nine private-fixture tests were skipped. See [relaxed draft results](docs/relaxed-draft-benchmark-results.json) for all request measurements and answer checks. The measured private generator was ported directly; the integrated release was not timed in a separate full-model run.
+
 See [MTP pipeline results](docs/mtp-pipeline-benchmark-results.json), [native affine results](docs/native-affine-benchmark-results.json), [production benchmark data](docs/benchmark-results.json), [MTP tuning data](docs/mtp-tuning-benchmark-results.json), and [earlier batched MTP data](docs/batched-mtp-benchmark-results.json). The previous MTP data remain in [the earlier report](docs/mtp-benchmark-results.json). For a new resident benchmark with your own input:
 
 ```sh

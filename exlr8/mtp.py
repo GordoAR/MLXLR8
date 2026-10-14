@@ -3,7 +3,8 @@
 The input norms, normalized target/recurrent states, and shared output
 norm follow vLLM's DeepSeek V3.2 MTP equations (Apache-2.0):
 https://github.com/vllm-project/vllm/tree/main/vllm/models/deepseek_v32/nvidia
-All output tokens are selected by the full target model.
+The full target model checks each proposal. Neural words use relaxed
+posterior acceptance; prompt matches use the target sampler.
 """
 
 from dataclasses import replace
@@ -127,13 +128,22 @@ class MTPRuntime(nn.Module):
         self.sync_draft_cache(state, step_size)
 
 
+def _neural_allowed(logprobs, tokens):
+    probabilities = mx.softmax(logprobs[:len(tokens)].astype(mx.float32), axis=-1)
+    entropy = -(probabilities * mx.log(probabilities + 1e-5)).sum(axis=-1)
+    threshold = mx.minimum(0.03, 0.1 * mx.exp(-entropy))
+    selected = mx.take_along_axis(probabilities,
+        mx.array(tokens, dtype=mx.uint32)[:, None], axis=-1).reshape(-1)
+    return (selected > threshold).tolist()
+
+
 def stream_generate(
     model, tokenizer, prompt, *, max_tokens=128, sampler=None,
     prompt_cache=None, prefill_step_size=128, num_draft_tokens=63,
     prompt_progress_callback=None, stream=generation_stream,
     **kwargs,
 ):
-    """Verify prompt or K3 proposals; preserve the target sampler."""
+    """Verify prompt matches and accept plausible K3 words with the target."""
     from mlx_lm import stream_generate as ordinary_generate
 
     if (not isinstance(model, MTPRuntime) or num_draft_tokens <= 0
@@ -166,8 +176,13 @@ def stream_generate(
     initial_offset = cache[0][0].offset
     detokenizer = tokenizer.detokenizer
     detokenizer.reset()
+    response_stop_tokens = tokenizer.eos_token_ids | {tokenizer.convert_tokens_to_ids("<|assistant|>")}
+    response_stop_tokens.discard(tokenizer.unk_token_id)
+    control_tokens = set(tokenizer.all_special_ids) | response_stop_tokens
+    control_tokens.discard(tokenizer.unk_token_id)
     count = 0
     accepted_total = proposed_total = cycles = 0
+    non_greedy_accepted = 0
     proposed_by_depth = [0] * num_draft_tokens
     accepted_by_depth = [0] * num_draft_tokens
     draft_seconds = verify_seconds = sync_seconds = 0.0
@@ -189,6 +204,9 @@ def stream_generate(
     def record_stats():
         model._mtp_stats = {
             "accepted_draft_tokens": accepted_total,
+            "non_greedy_accepted_tokens": non_greedy_accepted,
+            "typical_neural_acceptance": True,
+            "neural_limit_current": neural_limit,
             "proposed_draft_tokens": proposed_total,
             "verification_cycles": cycles,
             "one_token_passes": direct_passes,
@@ -211,7 +229,7 @@ def stream_generate(
         nonlocal count, finish_reason
         count += 1
         lookup.append(token)
-        if token in tokenizer.eos_token_ids:
+        if token in response_stop_tokens:
             finish_reason = "stop"
         else:
             detokenizer.add_token(token)
@@ -262,7 +280,8 @@ def stream_generate(
                 remaining = -1 if max_tokens < 0 else max_tokens - count
                 limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
                 proposal = lookup.propose(limit)
-                slow = {name: passes and seconds / committed >= direct_seconds / max(direct_passes, 1)
+                slow = {name: passes >= (4 if name == "neural" else 1)
+                        and seconds / committed >= direct_seconds / max(direct_passes, 1)
                         for name, (seconds, committed, passes) in costs.items()}
                 source = "lookup" if proposal and not slow["lookup"] else ("neural" if not slow["neural"] else None)
                 probe = direct_passes == 0
@@ -336,7 +355,14 @@ def stream_generate(
                 verify_seconds += time.perf_counter() - verify_start
                 predictions = predictions.tolist()
                 accepted = 0
-                while accepted < n_draft and predictions[accepted] == draft_tokens[accepted]:
+                allowed = _neural_allowed(logprobs, draft_tokens) if source == "neural" else [False] * n_draft
+                while accepted < n_draft:
+                    same = predictions[accepted] == draft_tokens[accepted]
+                    plausible = (allowed[accepted] and predictions[accepted] not in control_tokens
+                                 and draft_tokens[accepted] not in control_tokens)
+                    if not (same or plausible):
+                        break
+                    non_greedy_accepted += not same
                     accepted += 1
                 accepted_total += accepted
                 if source == "lookup":

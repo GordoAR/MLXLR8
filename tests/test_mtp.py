@@ -299,6 +299,7 @@ def test_teacher_forced_mtp_cache_matches_full_layer(monkeypatch):
 def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap, draft_faster):
     import exlr8.mtp as mtp_module
 
+    monkeypatch.setattr(mtp_module.PromptLookup, "propose", lambda self, limit: [])
     model = DraftRuntime()
     clock = [0.0]
     monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
@@ -320,10 +321,10 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
     model.draft_step = draft
     cache = model.make_cache()
     prompt = [1, 2]
-    output = list(stream_generate(model, tokenizer(), prompt, max_tokens=20,
+    output = list(stream_generate(model, tokenizer(), prompt, max_tokens=40,
         prompt_cache=cache, num_draft_tokens=cap))
     tokens = [row.token for row in output]
-    assert tokens == expected_tokens(prompt, 20)
+    assert tokens == expected_tokens(prompt, 40)
     assert_cache(cache, [*prompt, *tokens])
     assert model._mtp_stats["adaptive_drafting"]
     assert model._mtp_stats["one_token_passes"] >= 1
@@ -331,10 +332,10 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
     if draft_faster:
         assert model._mtp_stats["measured_draft_passes"] > 1
     else:
-        assert model._mtp_stats["measured_draft_passes"] == 1
+        assert model._mtp_stats["measured_draft_passes"] == 4
         wide = [i for i, rows in enumerate(calls) if rows > 1]
-        assert len(wide) == 1
-        assert all(rows == 1 for rows in calls[wide[0] + 1:])
+        assert len(wide) == 4
+        assert all(rows == 1 for rows in calls[wide[-1] + 1:])
 
 
 @pytest.mark.parametrize("cap", [1, 3, 7])
