@@ -74,11 +74,15 @@ def test_both_projection_outputs_match_native_bits(lookup_weights, rows, transpo
 
 
 @pytest.mark.parametrize("rows", [2, 3, 4])
-def test_token_layout_projections_match_native_bits(lookup_weights, rows):
+@pytest.mark.parametrize("strided", [False, True])
+def test_token_layout_projections_match_native_bits(lookup_weights, rows, strided):
     _, _, (wk_codes, wv_codes, table), wk, wv = lookup_weights
     rng = np.random.default_rng(267 + rows)
     q = mx.array(rng.normal(size=(1, rows, 64, 256)), mx.bfloat16)
     value = mx.array(rng.normal(size=(1, 64, rows, 512)), mx.bfloat16)
+    if strided:
+        q = mx.contiguous(q.swapaxes(1, 2)).swapaxes(1, 2)
+        value = mx.contiguous(value.swapaxes(1, 2)).swapaxes(1, 2)
     queries = kv_lookup.query_projection_tokens(q, wk_codes, table)
     expected_q = mx.concatenate([q[:, i:i + 1].swapaxes(1, 2)[..., :192] @ wk for i in range(rows)], axis=2)
     output = kv_lookup.value_projection_tokens(value, wv_codes, table)
@@ -136,3 +140,32 @@ def test_value_dispatch_requires_small_bf16_token_batch(monkeypatch, shape, dtyp
         return "lookup"
     monkeypatch.setattr(kv_lookup, "value_projection", selected)
     assert Attention._project_values(attention, value) == ("lookup" if use_lookup else "native")
+
+
+@pytest.mark.parametrize("query", [False, True])
+@pytest.mark.parametrize("rows", [2, 3, 4])
+def test_shared_projection_dispatch(monkeypatch, query, rows):
+    calls = []
+    def selected(shared, token_major=False):
+        assert shared == query
+        def call(**args):
+            calls.append(("shared" if not token_major else "original", args["grid"]))
+            return [mx.zeros(args["output_shapes"][0], dtype=mx.bfloat16)]
+        return call
+    monkeypatch.setattr(kv_lookup, "_shared_kernel", selected)
+    monkeypatch.setattr(kv_lookup, "_kernel", selected)
+    if query:
+        x = mx.zeros((1, rows, 64, 256), mx.bfloat16)
+        projection = kv_lookup.query_projection_tokens
+        tiles = 8
+    else:
+        x = mx.zeros((1, 64, rows, 512), mx.bfloat16)
+        projection = kv_lookup.value_projection_tokens
+        tiles = 16
+    # Bypass the compiled function's existing graph to observe Python selection.
+    mx.disable_compile()
+    try:
+        mx.eval(projection(x, mx.zeros((1,), mx.uint8), mx.zeros((1,), mx.bfloat16)))
+    finally:
+        mx.enable_compile()
+    assert calls == [("shared" if rows == 4 else "original", (128 * tiles, 1 if rows == 4 else rows, 64))]
