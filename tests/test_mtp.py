@@ -441,3 +441,33 @@ def test_seed_timing_excludes_draft_sync_and_starts_drafting_immediately(monkeyp
     if limit <= 2:
         assert model._mtp_stats["ordinary_decode_seconds"] == 0
         assert model._mtp_stats["one_token_passes"] == 0
+
+
+@pytest.mark.parametrize("cap", [1, 2, 3])
+@pytest.mark.parametrize("errors", [(), (0,), (2,)])
+def test_neural_proposals_have_one_final_host_wait(monkeypatch, cap, errors):
+    model = DraftRuntime(errors)
+    cache = model.make_cache()
+    evaluations = 0
+    draft_evaluations = []
+    original_eval = mx.eval
+    original_step = model.draft_step
+
+    def counted_eval(*args, **kwargs):
+        nonlocal evaluations
+        evaluations += 1
+        return original_eval(*args, **kwargs)
+
+    def observed_step(*args, **kwargs):
+        draft_evaluations.append(evaluations)
+        return original_step(*args, **kwargs)
+
+    monkeypatch.setattr(mx, "eval", counted_eval)
+    model.draft_step = observed_step
+    responses = list(stream_generate(model, tokenizer(), [1, 2],
+        max_tokens=cap + 1, prompt_cache=cache, num_draft_tokens=cap))
+    assert len(draft_evaluations) >= cap
+    assert len(set(draft_evaluations[:cap])) == 1
+    actual = [response.token for response in responses]
+    assert actual == expected_tokens([1, 2], cap + 1)
+    assert_cache(cache, [1, 2, *actual])

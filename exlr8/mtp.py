@@ -350,9 +350,11 @@ def stream_generate(
                     for _ in range(n_draft):
                         draft_logits, draft_hidden = model.draft_step(y, draft_hidden, state.draft)
                         y, _ = sample(draft_logits[:, -1, :])
-                        mx.eval(y)
-                        draft_tokens.append(int(y.item()))
+                        draft_tokens.append(y)
                         y = y.reshape(1, 1)
+                    draft_ids = mx.concatenate(draft_tokens)
+                    mx.eval(draft_ids)
+                    draft_tokens = draft_ids.tolist()
                 draft_seconds += time.perf_counter() - draft_start
                 proposed_total += n_draft
                 for depth in range(n_draft):
