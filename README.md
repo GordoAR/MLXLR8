@@ -6,6 +6,23 @@ The runtime serves a local OpenAI-compatible chat API. All 78 main layers run. M
 
 Optimized resident mode converts the 75 main expert layers to native MLX MXFP4 groups of 32 in RAM. Gate and up projections share input preparation and one joined matrix operation. Input scale magnitudes are included before quantization. Signed transforms, output scales, and activation casts are retained. This conversion changes weight values. Model files remain unchanged. SSD-cache mode keeps the original packed trellis weights. `--no-optimize` selects the original expert values and reference operators.
 
+## Latest measured results: v0.1.21
+
+Tested on an M3 Ultra with 512 GB unified memory, in optimized resident mode with `--mtp`. The same eight prompts ran twice. The comparison uses saved v0.1.9 results.
+
+| Measure | v0.1.9 | v0.1.21 |
+| --- | ---: | ---: |
+| Decode, tokens/s | 24.85 | **30.19** |
+| Fresh-prompt prefill, tokens/s | 85.62 | **85.97** |
+| Summed median request time, seconds | 66.09 | 54.76 |
+| Peak MLX memory, GiB | 392.01 | 396.16 |
+
+Decode is **21.49% faster than v0.1.9** and **1.29% faster than v0.1.20**. Prefill includes time to the first output token; decode excludes that token. Fresh prefill excludes the source review with its saved prefix. Loading and warmup are outside these measurements.
+
+All 16 answers match v0.1.20; **12 of 16 meet the full prompt**. Both code answers pass 519 behavior cases each. All six JSON and four summary/email answers pass. The source reviews contain false or unsupported claims and stop at the 512-token limit. The cache explanations use 187 words against a 180-word limit. These tests do not establish general answer quality. The 50 tokens/s target remains unmet.
+
+The Metal suite passed **1,023 tests and 23 subtests**, with nine optional-fixture skips. See the [v0.1.21 results](docs/refined-draft-vocabulary-results.json) for per-prompt speeds, answer checks, and hashes of all 63 tested runtime files.
+
 ## Requirements
 
 - Apple Silicon Mac with **macOS 26 or later**. The pinned MLX wheels require this version.
@@ -126,7 +143,7 @@ Rebuild saved optimized benchmark prefixes from earlier versions. Their cached s
 
 Resident mode retains dense K4 weights, including with `--mtp`. One to three BF16 token rows use the K4 path; four-row queries share reads from the existing FP8 weights. The 75 eligible four-row output projections use an additional MXFP4 representation. This adds rounding and about 3.73 GiB at the measured peak. Other row counts retain their existing operators. The FP8 vocabulary head shares packed-weight reads for one or four BF16 token rows in a batch of one, with the original F32 row scales and a BF16 result. Other shapes and `--no-optimize` keep the native vocabulary path. Residual-add/RMS fusion and attention lookup support one to four BF16 token rows in a batch of one. Four-row attention query and value projections share lookup-weight reads across the rows. They retain the existing weight values, F32 accumulation order and BF16 output layouts. RMS fusion uses the verified M3 Ultra, 6,144-channel profile. Larger token batches use the existing operators. `--no-optimize` selects the reference operators for diagnosis. MTP retains the production settings and uses the production prefill input sizes. With `--mtp`, matching spans from prior prompt and generated tokens start with up to three proposals. Full acceptance increases the limit to 15, then to 63. Rejection restores the three-proposal limit. The full target model verifies every proposal. The K3 layer provides up to three proposals when no useful prompt match is available. Its optimized draft head ranks MXFP4 scores, then recalculates the leading 128 scores with the original FP8 rows. The full target vocabulary head retains FP8 scoring. The draft steps keep token IDs on the GPU and read the complete proposal sequence once, after the final step. The target also reads prediction IDs and posterior acceptance decisions together after verification. `--num-draft-tokens` sets the maximum for either source. MTP uses the final prefill target pass as its initial cost reference. It starts drafting after the first output token and compares each source's cost per committed token. If ordinary generation is used later, its measured cost replaces the initial reference. It checks four K3 cost samples before it stops a costly neural source. The existing word acceptance rule is retained. It uses ordinary generation when proposals cost more and continues to search for useful prompt matches. One to four target rows use the shared dense, compiled expert finish, and indexed sparse attention paths. The tested 256-expert router combines sigmoid scoring, bias correction, top-eight selection and score normalization in one GPU kernel for the optimized resident one-to-four-row target path. All eight routed experts and the shared expert remain. MTP remains off by default.
 
-## Checks and measured results
+## Checks and release history
 
 Install the test extra and run the portable suite from the repository folder:
 
