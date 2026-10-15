@@ -458,3 +458,20 @@ Against v0.1.16, decode rises 0.37%, prefill falls 0.03%, and summed request tim
 All sixteen final answers and token sequences match v0.1.16. Twelve meet the full prompt. Both code answers pass 519 behavior cases each; all six JSON answers and four summary/email answers pass. The same four source/cache answers fail: false or unsupported source claims and truncation remain; cache explanations use 187 words against 180.
 
 The Metal suite passed 930 tests and 23 subtests; nine optional-fixture tests skipped. The 24 new cases check the independent acceptance rule, joint decision evaluation, rejection and cache alignment. Checked warmup confirms the new path with one/two/three proposals. All 57 runtime files match the tested source. The 50 tokens/s target remains unmet. See [verification read results](docs/verification-read-results.json) for per-prompt measurements, answer checks and source hashes.
+
+Version 0.1.18 removes the intermediate expert output copy for two to four token rows. The final transform and weighted sum read the sorted down-projection output through the existing inverse permutation. Weight values, output casts, score order and the residual sum retain their existing behavior.
+
+The same eight prompts ran twice in forward/reverse order. The comparison uses the documented v0.1.9 and v0.1.17 results.
+
+| Measure | v0.1.9 | v0.1.17 | v0.1.18 |
+| --- | ---: | ---: | ---: |
+| Weighted decode, tokens/s | 24.84690 | 28.85721 | 28.92989 |
+| Fresh-prompt prefill, tokens/s | 85.61777 | 85.98121 | 85.88701 |
+| Summed median request time, seconds | 66.08923 | 56.93534 | 56.82025 |
+| Peak memory, GiB | 392.00723 | 395.70029 | 395.69571 |
+
+Against v0.1.17, decode rises 0.25%, fresh prefill falls 0.11%, and summed request time falls 0.20%. Decode is 16.43% above v0.1.9. The gain is small. Prefill includes time to the first output token; decode excludes that token. Fresh prefill excludes the source-review request with its saved prefix.
+
+All sixteen final answers and token sequences match v0.1.17. Twelve meet the full prompt. Both code answers pass 519 cases each; all six JSON and four summary/email answers pass. The same four source/cache answers fail: the source review is incomplete and has unsupported claims; the cache explanation exceeds its 180-word limit.
+
+The Metal suite passed 936 tests and 23 subtests, with nine optional-fixture skips. The added expert tests cover two/three/four rows and F32/BF16 outputs against independent native slot sums. Checked warmup confirms the new finish in all 75 target expert layers at two/three/four rows. All 58 runtime files match the tested source. The 50 tokens/s target remains unmet. See [sorted expert finish results](docs/sorted-expert-finish-results.json) for per-prompt prefill and decode, answer checks, and source hashes.

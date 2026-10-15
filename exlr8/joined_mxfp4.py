@@ -59,7 +59,16 @@ def _gate_kernel():
     )
 
 
-def _inner(x, indices, unit, weights, scales, h, m):
+@lru_cache(maxsize=1)
+def _sorted_finish_kernel():
+    directory = Path(__file__).with_name("metal")
+    return mx.fast.metal_kernel(name="exlr8_joined_finish_sorted",
+        input_names=["inner", "indices", "out_scale", "scores", "residual", "permutation", "dims"],
+        output_names=["out"], source=(directory / "joined_finish_sorted.metal").read_text(),
+        header=(directory / "fast_decode_common.metal").read_text())
+
+
+def _inner(x, indices, unit, weights, scales, h, m, return_sorted=False):
     slots = indices.shape[-1]
     indices = indices.reshape(-1, slots)
     rows = indices.shape[0]
@@ -91,6 +100,8 @@ def _inner(x, indices, unit, weights, scales, h, m):
         rhs_indices=ids, transpose=True, group_size=32, bits=4,
         mode="mxfp4", sorted_indices=order is not None,
     ).reshape(ids.size, h)
+    if return_sorted:
+        return value, mx.argsort(order)
     return value if order is None else value[mx.argsort(order)]
 
 
@@ -107,6 +118,15 @@ class JoinedMXFP4:
 
         @mx.compile
         def finish(x, ids, scores, residual):
+            rows = x.size // h
+            if 2 <= rows <= 4:
+                value, inverse = _inner(x, ids, unit, weights, scales, h, m, True)
+                return _sorted_finish_kernel()(
+                    inputs=[value, ids.reshape(-1), scales["down"][1], scores.reshape(-1, 8),
+                            residual.reshape(-1, h), inverse, decode._dims(h)],
+                    template=[("T", residual.dtype)], grid=(h // 128 * 288, rows, 1),
+                    threadgroup=(288, 1, 1), output_shapes=[residual.shape],
+                    output_dtypes=[residual.dtype])[0]
             value = _inner(x, ids, unit, weights, scales, h, m)
             return decode._finish_fused(
                 value, ids.reshape(-1), scales["down"][1], h,
