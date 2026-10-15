@@ -74,7 +74,7 @@ def test_lookup_preserves_output_stream_and_cache(monkeypatch, cap, ending):
 
     model.draft_step = forbidden
     cache = model.make_cache()
-    prompt = [*range(30), 0, 1]
+    prompt = [*range(30), 0, 1, 2, 3]
     rows = []
     forward = model.forward_hidden
 
@@ -93,14 +93,14 @@ def test_lookup_preserves_output_stream_and_cache(monkeypatch, cap, ending):
     else:
         responses = list(generator)
     actual = [r.token for r in responses]
-    assert actual == [(2 + i) % 30 for i in range(len(actual))]
+    assert actual == [(4 + i) % 30 for i in range(len(actual))]
     assert [r.generation_tokens for r in responses] == list(range(1, len(actual) + 1))
     assert all(r.prompt_tokens == len(prompt) for r in responses)
     assert "".join(r.text for r in responses) == tok.decode(actual[:-1] if ending == "eos" else actual)
     assert_cache(cache, [*prompt, *actual])
     assert model._mtp_stats["lookup_accepted_tokens"] > 0
     assert model._mtp_stats["lookup_proposed_tokens"] == model._mtp_stats["lookup_accepted_tokens"]
-    assert model._mtp_stats["ordinary_decode_tokens"] == 8
+    assert model._mtp_stats["ordinary_decode_tokens"] == 0
     assert all(1 <= size <= cap + 1 for size in rows)
     if ending == "eos":
         assert actual[-1] == 18 and responses[-1].finish_reason == "stop"
@@ -153,9 +153,9 @@ def test_lookup_checks_a_short_span_before_a_long_copy(monkeypatch, wrong):
         return propose(self, limit)
 
     monkeypatch.setattr(PromptLookup, "propose", lookup)
-    prompt = [*range(30), 0, 1]
+    prompt = [*range(30), 0, 1, 2, 3]
     if wrong:
-        prompt[12] = 25
+        prompt[6] = 25
     cache = model.make_cache()
     forward = model.forward_hidden
     rows = []
@@ -167,12 +167,12 @@ def test_lookup_checks_a_short_span_before_a_long_copy(monkeypatch, wrong):
     model.forward_hidden = record
     generator = stream_generate(model, cycle_tokenizer(eos=99), prompt,
         max_tokens=160, prompt_cache=cache, num_draft_tokens=63)
-    responses = [next(generator) for _ in range(10)]
+    responses = [next(generator) for _ in range(2)]
     assert model._mtp_stats["lookup_proposed_tokens"] == 3
     assert model._mtp_stats["lookup_accepted_tokens"] == (1 if wrong else 3)
     responses.extend(generator)
     actual = [r.token for r in responses]
-    assert actual == [(2 + i) % 30 for i in range(160)]
+    assert actual == [(4 + i) % 30 for i in range(160)]
     assert_cache(cache, [*prompt, *actual])
     windows = [n for n in rows if n > 1]
     assert windows[1] == 4  # The first is prompt prefill.

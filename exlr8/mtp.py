@@ -187,6 +187,7 @@ def stream_generate(
     accepted_by_depth = [0] * num_draft_tokens
     draft_seconds = verify_seconds = sync_seconds = 0.0
     direct_seconds = direct_passes = 0
+    seed_target_seconds = 0.0
     costs = {"neural": [0.0, 0, 0], "lookup": [0.0, 0, 0]}
     neural_limit = min(num_draft_tokens, 3)
     lookup_limit = neural_limit
@@ -212,6 +213,7 @@ def stream_generate(
             "one_token_passes": direct_passes,
             "ordinary_decode_tokens": ordinary_tokens,
             "ordinary_decode_seconds": direct_seconds,
+            "seed_target_seconds": seed_target_seconds,
             "lookup_proposed_tokens": lookup_proposed,
             "lookup_accepted_tokens": lookup_accepted,
             "measured_draft_passes": measured_draft_passes,
@@ -261,10 +263,12 @@ def stream_generate(
             model.sync_draft_cache(state, prefill_step_size)
             progress(pos + part.size, tokens.size)
             mx.clear_cache()
+        seed_start = time.perf_counter()
         hidden, _ = model.forward_hidden(tokens[-1:][None], cache)
-        model.sync_draft_cache(state, prefill_step_size)
         seed, seed_logprobs = sample(model.target.project_hidden(hidden)[:, -1, :])
         mx.eval(seed, seed_logprobs)
+        seed_target_seconds = time.perf_counter() - seed_start
+        model.sync_draft_cache(state, prefill_step_size)
         progress(tokens.size, tokens.size)
         previous_hidden = state.history.keys[:, 0, state.history.offset - 1:state.history.offset, :]
         lookup = PromptLookup(np.asarray(state.history.values)[0, 0, :state.history.offset, 0])
@@ -280,19 +284,20 @@ def stream_generate(
                     if finish_reason is not None:
                         return
 
+                # Use the final prefill pass until ordinary decode has a measured cost.
                 # Compare each proposal source with the ordinary pipeline.
                 # Keep searching for prompt matches during ordinary generation.
                 remaining = -1 if max_tokens < 0 else max_tokens - count
                 limit = lookup_limit if remaining < 0 else min(lookup_limit, remaining)
                 proposal = lookup.propose(limit)
+                direct_cost = direct_seconds / direct_passes if direct_passes else seed_target_seconds
                 slow = {name: passes >= (4 if name == "neural" else 1)
-                        and seconds / committed >= direct_seconds / max(direct_passes, 1)
+                        and seconds / committed >= direct_cost
                         for name, (seconds, committed, passes) in costs.items()}
                 source = "lookup" if proposal and not slow["lookup"] else ("neural" if not slow["neural"] else None)
-                probe = direct_passes == 0
                 searching = source is None
-                if probe or searching:
-                    limit = min(8, remaining) if probe and remaining >= 0 else (8 if probe else remaining)
+                if searching:
+                    limit = remaining
                     before = cache[0][0].offset
                     direct_start = time.perf_counter()
                     ordinary_used = True
