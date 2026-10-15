@@ -1,0 +1,897 @@
+{
+  "baseline_release": "9580baec854397d16ea1f62f6474c9a5eeb0664d",
+  "baseline_version": "0.1.9",
+  "sources": {
+    "baseline": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v019-shared-fp8-full.json",
+    "candidate": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json"
+  },
+  "metrics": {
+    "baseline": {
+      "prefill_tps_fresh_prompts": 85.61777122006092,
+      "decode_tps": 24.846904533355993,
+      "summed_median_request_seconds": 66.08923237549607,
+      "maximum_peak_gib": 392.007231650874,
+      "cases": [
+        {
+          "input_tokens": 1.0,
+          "cached_tokens_before": 23860.0,
+          "completion_tokens": 512.0,
+          "prefill_seconds": 0.1412464165041456,
+          "decode_seconds": 21.800049499986926,
+          "elapsed_seconds": 21.94129591649107,
+          "case": "source_review",
+          "prefill_tps": 7.079825632041079,
+          "decode_tps": 23.4403137479255
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 108.0,
+          "prefill_seconds": 0.9811876879975898,
+          "decode_seconds": 4.146579186999588,
+          "elapsed_seconds": 5.127766874997178,
+          "case": "merge_intervals",
+          "prefill_tps": 83.57218603847934,
+          "decode_tps": 25.804402900460182
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 67.0,
+          "prefill_seconds": 0.9795672290056245,
+          "decode_seconds": 2.7020105834963033,
+          "elapsed_seconds": 3.681577812501928,
+          "case": "inventory_math",
+          "prefill_tps": 83.71043617214471,
+          "decode_tps": 24.42625517572859
+        },
+        {
+          "input_tokens": 86.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 230.0,
+          "prefill_seconds": 1.0191948540159501,
+          "decode_seconds": 9.062759187989286,
+          "elapsed_seconds": 10.081954042005236,
+          "case": "delivery_reasoning",
+          "prefill_tps": 84.38033184835344,
+          "decode_tps": 25.268242844131798
+        },
+        {
+          "input_tokens": 97.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 117.0,
+          "prefill_seconds": 1.0976353755104356,
+          "decode_seconds": 4.307202541487641,
+          "elapsed_seconds": 5.404837916998076,
+          "case": "invoice_extract",
+          "prefill_tps": 88.37178735688242,
+          "decode_tps": 26.931633440190023
+        },
+        {
+          "input_tokens": 119.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 106.0,
+          "prefill_seconds": 1.3301169790065615,
+          "decode_seconds": 4.015494353996473,
+          "elapsed_seconds": 5.345611333003035,
+          "case": "incident_summary",
+          "prefill_tps": 89.46581532165598,
+          "decode_tps": 26.148710655139478
+        },
+        {
+          "input_tokens": 73.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 227.0,
+          "prefill_seconds": 0.9084041040041484,
+          "decode_seconds": 8.786758271002327,
+          "elapsed_seconds": 9.695162375006475,
+          "case": "cache_explanation",
+          "prefill_tps": 80.36071135987143,
+          "decode_tps": 25.72052092816019
+        },
+        {
+          "input_tokens": 104.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 93.0,
+          "prefill_seconds": 1.194016853987705,
+          "decode_seconds": 3.6170092505053617,
+          "elapsed_seconds": 4.811026104493067,
+          "case": "maintenance_email",
+          "prefill_tps": 87.10094807511896,
+          "decode_tps": 25.43537868672742
+        }
+      ]
+    },
+    "candidate": {
+      "prefill_tps_fresh_prompts": 85.81672954454142,
+      "decode_tps": 27.67968655772186,
+      "summed_median_request_seconds": 59.049251001517405,
+      "maximum_peak_gib": 395.6660499777645,
+      "cases": [
+        {
+          "input_tokens": 1.0,
+          "cached_tokens_before": 23860.0,
+          "completion_tokens": 512.0,
+          "prefill_seconds": 0.146997770993039,
+          "decode_seconds": 20.003945229007513,
+          "elapsed_seconds": 20.150943000000552,
+          "case": "source_review",
+          "prefill_tps": 6.802824241786322,
+          "decode_tps": 25.544960963950462
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 108.0,
+          "prefill_seconds": 0.9815370625001378,
+          "decode_seconds": 3.7372019379981793,
+          "elapsed_seconds": 4.718739000498317,
+          "case": "merge_intervals",
+          "prefill_tps": 83.54243882664235,
+          "decode_tps": 28.63104583995646
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 58.0,
+          "prefill_seconds": 0.977525312511716,
+          "decode_seconds": 2.113536604490946,
+          "elapsed_seconds": 3.091061917002662,
+          "case": "inventory_math",
+          "prefill_tps": 83.88529580815043,
+          "decode_tps": 26.969014815680794
+        },
+        {
+          "input_tokens": 86.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 192.0,
+          "prefill_seconds": 1.0119874795054784,
+          "decode_seconds": 6.335286291490775,
+          "elapsed_seconds": 7.347273770996253,
+          "case": "delivery_reasoning",
+          "prefill_tps": 84.9812885452151,
+          "decode_tps": 30.148598060444595
+        },
+        {
+          "input_tokens": 97.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 119.0,
+          "prefill_seconds": 1.0961150829971302,
+          "decode_seconds": 3.781342021015007,
+          "elapsed_seconds": 4.877457104012137,
+          "case": "invoice_extract",
+          "prefill_tps": 88.49435748550316,
+          "decode_tps": 31.205852140380003
+        },
+        {
+          "input_tokens": 119.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 105.0,
+          "prefill_seconds": 1.3284746255085338,
+          "decode_seconds": 3.504289083488402,
+          "elapsed_seconds": 4.832763708996936,
+          "case": "incident_summary",
+          "prefill_tps": 89.57641923679752,
+          "decode_tps": 29.67791683911862
+        },
+        {
+          "input_tokens": 73.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 242.0,
+          "prefill_seconds": 0.903287104491028,
+          "decode_seconds": 8.793850104004377,
+          "elapsed_seconds": 9.697137208495406,
+          "case": "cache_explanation",
+          "prefill_tps": 80.81594394191319,
+          "decode_tps": 27.405516031056518
+        },
+        {
+          "input_tokens": 104.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 95.0,
+          "prefill_seconds": 1.1937848750094417,
+          "decode_seconds": 3.1400904165057,
+          "elapsed_seconds": 4.333875291515142,
+          "case": "maintenance_email",
+          "prefill_tps": 87.11787372844496,
+          "decode_tps": 29.935443739420542
+        }
+      ]
+    }
+  },
+  "change_percent": {
+    "decode_tps": 11.400945419832741,
+    "prefill_tps_fresh_prompts": 0.23237970534075725,
+    "summed_median_request_seconds": -10.652236560987626
+  },
+  "quality": [
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 0,
+      "finish_reason": "length",
+      "output_sha256": "f538e2379529790b0bd5f1f8f88751c20668c767bd902de80e68b82d13f0e493",
+      "answer": "EXPERT STORE REVIEW\n\n1. Scope and intent\n\nThis module implements a MoE expert-weight loader for a trellis-style quantized model (up1 manifest, K=3/K=4 packed 1-bit experts, expert 256 being a shared expert). It supports two modes: a bounded LRU cache of per-expert slices, and a fully resident mode that keeps all experts in memory. The code is well-organized but has several correctness and performance hazards that should be addressed before production use.\n\n2. Performance risks\n\n2.1 The cache is a per-call miss amplifier. The `ExpertLayer.__call__` path performs `np.unique` on every request, then `store._get(self, int(expert))` per expert. Each `_get` miss triggers a synchronous `load_slice` from disk plus `mx.eval(arrays)` \u2014 a blocking host-device synchronization. On a cold cache with a 397B model, a single prefill with 256 experts per layer will stall on hundreds of sequential disk reads per layer. This is the dominant cost of the whole pipeline. Mitigations: prefetch the next batch's expert IDs asynchronously, batch the three slices per expert into one read, and avoid `mx.eval` on the loading path (the eval is only needed to pin the buffer; lazy evaluation lets MLX schedule the copy alongside compute).\n\n2.2 `mx.stack` per call is a full copy. In the non-resident path, `packed[projection]` is built by stacking the selected experts' slices into a new contiguous tensor. That is a full device copy of the selected weights (3 projections \u00d7 selected experts \u00d7 expert_bytes) on every single call. For a 397B model with large expert counts, this is a large copy of the selected weights on every call. The `expert_linear` kernel should accept a list of slices or a pointer table instead of forcing a contiguous copy. Alternatively, use `mx.concatenate` with a preallocated buffer, or better, keep the packed slices in a single contiguous buffer and index them.\n\n2.3 Cache thrashing. The cache is keyed by `(layer, expert)` and uses LRU with `popitem(last=False)`. If the working set of experts exceeds the cache limit, the cache will thrash \u2014 evicting experts that were just loaded, then re-reading them on the next call. This is",
+      "final_answer_words": 340,
+      "kind": "Content review required",
+      "status": "failed",
+      "quality_checks": [
+        "Claims must follow the supplied source.",
+        "Judge useful findings and factual errors, not token matches."
+      ],
+      "case": "source_review",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": false,
+      "manual_review": "Partial at the unchanged 512-token cap. Correctly identifies synchronous cache misses, per-call stacking and capacity-driven reloads. Adds a false packed one-bit description relative to v0.1.12, and retains unsupported 397B and dominant-cost claims. The claim that evaluation only pins buffers is unsupported. The old unproved accounting allegation is absent. Content is mixed; this task still fails."
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 1,
+      "finish_reason": "stop",
+      "output_sha256": "4d31e910319437bea77bc976a914fd2413a65c934ef60e653b615a0617274b06",
+      "answer": "def merge_intervals(intervals):\n    if not intervals:\n        return []\n    sorted_intervals = sorted(intervals)\n    merged = []\n    cur_start, cur_end = sorted_intervals[0]\n    for start, end in sorted_intervals[1:]:\n        if start <= cur_end:\n            if end > cur_end:\n                cur_end = end\n        else:\n            merged.append((cur_start, cur_end))\n            cur_start, cur_end = start, end\n    merged.append((cur_start, cur_end))\n    return merged",
+      "final_answer_words": 45,
+      "format": {
+        "required": "Python code only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "Function behavior",
+      "expected_behavior_case_count": 519,
+      "passed": true,
+      "case_count": 519,
+      "failures": [],
+      "method": "Functional results and unchanged inputs, not source text matching.",
+      "status": "passed",
+      "code_evaluated": true,
+      "case": "merge_intervals",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 2,
+      "finish_reason": "stop",
+      "output_sha256": "231652bc58a33ebad26cb10801dea501342672b42bd0322f05d8370166000ba4",
+      "answer": "{\"remaining_bolts\": 299, \"full_bags\": 23, \"loose_bolts\": 0}",
+      "final_answer_words": 6,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": {
+        "remaining_bolts": 299,
+        "full_bags": 23,
+        "loose_bolts": 0
+      },
+      "expected": {
+        "remaining_bolts": 299,
+        "full_bags": 23,
+        "loose_bolts": 0
+      },
+      "case": "inventory_math",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 3,
+      "finish_reason": "stop",
+      "output_sha256": "ce93283e6bae713e782e3031e088bdb005b7e3a4f0730ca3ba65465d373562bb",
+      "answer": "[[\"A\",\"B\",\"C\"]]",
+      "final_answer_words": 1,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": [
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ],
+      "expected": [
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ],
+      "case": "delivery_reasoning",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 4,
+      "finish_reason": "stop",
+      "output_sha256": "5470339c6b18ab9b7ad4f991dcfaccc8ac6d10990e1e937447494580c524e9cb",
+      "answer": "{\n  \"invoice_id\": \"INV-204\",\n  \"customer\": \"North Dock\",\n  \"currency\": \"USD\",\n  \"items\": [\n    {\n      \"sku\": \"BX-7\",\n      \"quantity\": 3,\n      \"unit_price\": 12.50\n    },\n    {\n      \"sku\": \"CN-2\",\n      \"quantity\": 4,\n      \"unit_price\": 8.25\n    }\n  ],\n  \"total\": 70.50\n}",
+      "final_answer_words": 30,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": {
+        "invoice_id": "INV-204",
+        "customer": "North Dock",
+        "currency": "USD",
+        "items": [
+          {
+            "sku": "BX-7",
+            "quantity": 3,
+            "unit_price": 12.5
+          },
+          {
+            "sku": "CN-2",
+            "quantity": 4,
+            "unit_price": 8.25
+          }
+        ],
+        "total": 70.5
+      },
+      "expected": {
+        "invoice_id": "INV-204",
+        "customer": "North Dock",
+        "currency": "USD",
+        "items": [
+          {
+            "sku": "BX-7",
+            "quantity": 3,
+            "unit_price": 12.5
+          },
+          {
+            "sku": "CN-2",
+            "quantity": 4,
+            "unit_price": 8.25
+          }
+        ],
+        "total": 70.5
+      },
+      "case": "invoice_extract",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 5,
+      "finish_reason": "stop",
+      "output_sha256": "43134f19de976095c3962653400d8c32974f929d55f217324cdc3686a901ebd2",
+      "answer": "# Shift Handover \u2014 Incident Summary\n\n- **Cause:** At 09:10, a failed cooling fan caused unit C to shut down; the root cause of the fan failure is not yet known.\n- **Impact:** Units A and B continued running; 12 orders were delayed, but no orders were lost.\n- **Recovery:** Fan was replaced and unit C restarted at 09:42; the temperature alarm was tested successfully.\n- **Open action:** A spare fan must be ordered by Friday.",
+      "final_answer_words": 76,
+      "kind": "Content review required",
+      "status": "passed",
+      "quality_checks": [
+        "Four useful bullets.",
+        "Correct cause, twelve delayed orders, no lost orders, 09:42 restart, and spare fan by Friday.",
+        "Does not invent a cause for the fan failure."
+      ],
+      "case": "incident_summary",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": true,
+      "manual_review": "Four bullets preserve the cause, continued A/B service, twelve delayed orders with none lost, 09:42 restart, successful alarm test and spare fan due Friday. The fan failure cause remains unknown. No invented incident fact."
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 6,
+      "finish_reason": "stop",
+      "output_sha256": "d12309674e66a8ed74f0fefaf3b893834a0ea9923371cf0223ca2c7e07b3559c",
+      "answer": "When you run a program twice, the second run is often faster\u2014not because your code improved, but because the system already did expensive work.\n\n**Compiled code caches:** Languages like Java and Python (via .pyc files) compile source to bytecode. The first run compiles and saves it; the second run reuses that file, skipping compilation.\n\n**File caches:** Operating systems keep recently read files in RAM. The first run reads your program, libraries, and data from disk. The second run finds them in RAM, which is much faster.\n\n**Data already in memory:** Databases, caches (like Redis), and even the OS keep hot data in memory. A second run may hit this warm cache instead of re-fetching from disk or network.\n\n**Why this matters:** If you change code and run it, and it runs faster, you can't tell whether the improvement came from your change or from warming caches. The first run may have been slow due to cold-start costs.\n\n**A fair comparison:** Run each version multiple times, discard the first (warm-up) run, and compare the average of the remaining runs. This isolates your code's actual effect from cache effects.",
+      "final_answer_words": 187,
+      "kind": "Content review required",
+      "status": "failed",
+      "quality_checks": [
+        "Explains all three cache sources correctly.",
+        "Gives a fair warmed comparison with repeated runs.",
+        "Clear and complete within the requested length."
+      ],
+      "requested_word_limit": 180,
+      "word_count_within_limit": false,
+      "case": "cache_explanation",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": false,
+      "manual_review": "187 words exceeds the requested 180, as in v0.1.12. The persistent bytecode, OS file cache and external data-cache examples are useful. The repeated warmed comparison is sounder than the v0.1.12 advice to reset caches between runs. The answer does not fully separate a new process from a repeated operation. This task still fails its word limit."
+    },
+    {
+      "arm": "candidate",
+      "trial": 1,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 7,
+      "finish_reason": "stop",
+      "output_sha256": "dcd01f3a85a641524a38302fb38266bdf4b5a40b81f3acc89127315eb045e062",
+      "answer": "Subject: Planned Maintenance \u2014 Portal Unavailable on 22 October\n\nDear Customer,\n\nWe will be performing scheduled maintenance on 22 October from 02:00 to 02:30 local time. During this window, the portal will be unavailable.\n\nPlease note that all saved data will remain intact, and no action is required on your part.\n\nYou can follow status updates on our existing status page.\n\nWe apologize for any inconvenience and thank you for your patience.\n\nKind regards",
+      "final_answer_words": 74,
+      "kind": "Content review required",
+      "status": "passed",
+      "quality_checks": [
+        "Correct time, portal impact, retained data, no required action, and status page.",
+        "Usable subject and email.",
+        "No invented URL, cause, guarantee, or contact name."
+      ],
+      "requested_word_limit": 100,
+      "word_count_within_limit": true,
+      "case": "maintenance_email",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": true,
+      "manual_review": "74 words with a subject. Correct date, local time, portal impact, retained data, no action and existing status page. No invented URL, cause or contact. Retained saved data is an input fact, not an added assurance."
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 8,
+      "finish_reason": "stop",
+      "output_sha256": "dcd01f3a85a641524a38302fb38266bdf4b5a40b81f3acc89127315eb045e062",
+      "answer": "Subject: Planned Maintenance \u2014 Portal Unavailable on 22 October\n\nDear Customer,\n\nWe will be performing scheduled maintenance on 22 October from 02:00 to 02:30 local time. During this window, the portal will be unavailable.\n\nPlease note that all saved data will remain intact, and no action is required on your part.\n\nYou can follow status updates on our existing status page.\n\nWe apologize for any inconvenience and thank you for your patience.\n\nKind regards",
+      "final_answer_words": 74,
+      "kind": "Content review required",
+      "status": "passed",
+      "quality_checks": [
+        "Correct time, portal impact, retained data, no required action, and status page.",
+        "Usable subject and email.",
+        "No invented URL, cause, guarantee, or contact name."
+      ],
+      "requested_word_limit": 100,
+      "word_count_within_limit": true,
+      "case": "maintenance_email",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": true,
+      "manual_review": "74 words with a subject. Correct date, local time, portal impact, retained data, no action and existing status page. No invented URL, cause or contact. Retained saved data is an input fact, not an added assurance."
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 9,
+      "finish_reason": "stop",
+      "output_sha256": "d12309674e66a8ed74f0fefaf3b893834a0ea9923371cf0223ca2c7e07b3559c",
+      "answer": "When you run a program twice, the second run is often faster\u2014not because your code improved, but because the system already did expensive work.\n\n**Compiled code caches:** Languages like Java and Python (via .pyc files) compile source to bytecode. The first run compiles and saves it; the second run reuses that file, skipping compilation.\n\n**File caches:** Operating systems keep recently read files in RAM. The first run reads your program, libraries, and data from disk. The second run finds them in RAM, which is much faster.\n\n**Data already in memory:** Databases, caches (like Redis), and even the OS keep hot data in memory. A second run may hit this warm cache instead of re-fetching from disk or network.\n\n**Why this matters:** If you change code and run it, and it runs faster, you can't tell whether the improvement came from your change or from warming caches. The first run may have been slow due to cold-start costs.\n\n**A fair comparison:** Run each version multiple times, discard the first (warm-up) run, and compare the average of the remaining runs. This isolates your code's actual effect from cache effects.",
+      "final_answer_words": 187,
+      "kind": "Content review required",
+      "status": "failed",
+      "quality_checks": [
+        "Explains all three cache sources correctly.",
+        "Gives a fair warmed comparison with repeated runs.",
+        "Clear and complete within the requested length."
+      ],
+      "requested_word_limit": 180,
+      "word_count_within_limit": false,
+      "case": "cache_explanation",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": false,
+      "manual_review": "187 words exceeds the requested 180, as in v0.1.12. The persistent bytecode, OS file cache and external data-cache examples are useful. The repeated warmed comparison is sounder than the v0.1.12 advice to reset caches between runs. The answer does not fully separate a new process from a repeated operation. This task still fails its word limit."
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 10,
+      "finish_reason": "stop",
+      "output_sha256": "43134f19de976095c3962653400d8c32974f929d55f217324cdc3686a901ebd2",
+      "answer": "# Shift Handover \u2014 Incident Summary\n\n- **Cause:** At 09:10, a failed cooling fan caused unit C to shut down; the root cause of the fan failure is not yet known.\n- **Impact:** Units A and B continued running; 12 orders were delayed, but no orders were lost.\n- **Recovery:** Fan was replaced and unit C restarted at 09:42; the temperature alarm was tested successfully.\n- **Open action:** A spare fan must be ordered by Friday.",
+      "final_answer_words": 76,
+      "kind": "Content review required",
+      "status": "passed",
+      "quality_checks": [
+        "Four useful bullets.",
+        "Correct cause, twelve delayed orders, no lost orders, 09:42 restart, and spare fan by Friday.",
+        "Does not invent a cause for the fan failure."
+      ],
+      "case": "incident_summary",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": true,
+      "manual_review": "Four bullets preserve the cause, continued A/B service, twelve delayed orders with none lost, 09:42 restart, successful alarm test and spare fan due Friday. The fan failure cause remains unknown. No invented incident fact."
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 11,
+      "finish_reason": "stop",
+      "output_sha256": "5470339c6b18ab9b7ad4f991dcfaccc8ac6d10990e1e937447494580c524e9cb",
+      "answer": "{\n  \"invoice_id\": \"INV-204\",\n  \"customer\": \"North Dock\",\n  \"currency\": \"USD\",\n  \"items\": [\n    {\n      \"sku\": \"BX-7\",\n      \"quantity\": 3,\n      \"unit_price\": 12.50\n    },\n    {\n      \"sku\": \"CN-2\",\n      \"quantity\": 4,\n      \"unit_price\": 8.25\n    }\n  ],\n  \"total\": 70.50\n}",
+      "final_answer_words": 30,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": {
+        "invoice_id": "INV-204",
+        "customer": "North Dock",
+        "currency": "USD",
+        "items": [
+          {
+            "sku": "BX-7",
+            "quantity": 3,
+            "unit_price": 12.5
+          },
+          {
+            "sku": "CN-2",
+            "quantity": 4,
+            "unit_price": 8.25
+          }
+        ],
+        "total": 70.5
+      },
+      "expected": {
+        "invoice_id": "INV-204",
+        "customer": "North Dock",
+        "currency": "USD",
+        "items": [
+          {
+            "sku": "BX-7",
+            "quantity": 3,
+            "unit_price": 12.5
+          },
+          {
+            "sku": "CN-2",
+            "quantity": 4,
+            "unit_price": 8.25
+          }
+        ],
+        "total": 70.5
+      },
+      "case": "invoice_extract",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 12,
+      "finish_reason": "stop",
+      "output_sha256": "ce93283e6bae713e782e3031e088bdb005b7e3a4f0730ca3ba65465d373562bb",
+      "answer": "[[\"A\",\"B\",\"C\"]]",
+      "final_answer_words": 1,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": [
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ],
+      "expected": [
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ],
+      "case": "delivery_reasoning",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 13,
+      "finish_reason": "stop",
+      "output_sha256": "231652bc58a33ebad26cb10801dea501342672b42bd0322f05d8370166000ba4",
+      "answer": "{\"remaining_bolts\": 299, \"full_bags\": 23, \"loose_bolts\": 0}",
+      "final_answer_words": 6,
+      "format": {
+        "required": "JSON only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "JSON task result",
+      "status": "passed",
+      "passed": true,
+      "actual": {
+        "remaining_bolts": 299,
+        "full_bags": 23,
+        "loose_bolts": 0
+      },
+      "expected": {
+        "remaining_bolts": 299,
+        "full_bags": 23,
+        "loose_bolts": 0
+      },
+      "case": "inventory_math",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 14,
+      "finish_reason": "stop",
+      "output_sha256": "4d31e910319437bea77bc976a914fd2413a65c934ef60e653b615a0617274b06",
+      "answer": "def merge_intervals(intervals):\n    if not intervals:\n        return []\n    sorted_intervals = sorted(intervals)\n    merged = []\n    cur_start, cur_end = sorted_intervals[0]\n    for start, end in sorted_intervals[1:]:\n        if start <= cur_end:\n            if end > cur_end:\n                cur_end = end\n        else:\n            merged.append((cur_start, cur_end))\n            cur_start, cur_end = start, end\n    merged.append((cur_start, cur_end))\n    return merged",
+      "final_answer_words": 45,
+      "format": {
+        "required": "Python code only",
+        "status": "passed",
+        "passed": true,
+        "markdown_fence_present": false
+      },
+      "kind": "Function behavior",
+      "expected_behavior_case_count": 519,
+      "passed": true,
+      "case_count": 519,
+      "failures": [],
+      "method": "Functional results and unchanged inputs, not source text matching.",
+      "status": "passed",
+      "code_evaluated": true,
+      "case": "merge_intervals",
+      "same_final_answer_as_baseline": true,
+      "same_final_answer_as_v012": true
+    },
+    {
+      "arm": "candidate",
+      "trial": 2,
+      "source": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-full.json",
+      "request_index": 15,
+      "finish_reason": "length",
+      "output_sha256": "f538e2379529790b0bd5f1f8f88751c20668c767bd902de80e68b82d13f0e493",
+      "answer": "EXPERT STORE REVIEW\n\n1. Scope and intent\n\nThis module implements a MoE expert-weight loader for a trellis-style quantized model (up1 manifest, K=3/K=4 packed 1-bit experts, expert 256 being a shared expert). It supports two modes: a bounded LRU cache of per-expert slices, and a fully resident mode that keeps all experts in memory. The code is well-organized but has several correctness and performance hazards that should be addressed before production use.\n\n2. Performance risks\n\n2.1 The cache is a per-call miss amplifier. The `ExpertLayer.__call__` path performs `np.unique` on every request, then `store._get(self, int(expert))` per expert. Each `_get` miss triggers a synchronous `load_slice` from disk plus `mx.eval(arrays)` \u2014 a blocking host-device synchronization. On a cold cache with a 397B model, a single prefill with 256 experts per layer will stall on hundreds of sequential disk reads per layer. This is the dominant cost of the whole pipeline. Mitigations: prefetch the next batch's expert IDs asynchronously, batch the three slices per expert into one read, and avoid `mx.eval` on the loading path (the eval is only needed to pin the buffer; lazy evaluation lets MLX schedule the copy alongside compute).\n\n2.2 `mx.stack` per call is a full copy. In the non-resident path, `packed[projection]` is built by stacking the selected experts' slices into a new contiguous tensor. That is a full device copy of the selected weights (3 projections \u00d7 selected experts \u00d7 expert_bytes) on every single call. For a 397B model with large expert counts, this is a large copy of the selected weights on every call. The `expert_linear` kernel should accept a list of slices or a pointer table instead of forcing a contiguous copy. Alternatively, use `mx.concatenate` with a preallocated buffer, or better, keep the packed slices in a single contiguous buffer and index them.\n\n2.3 Cache thrashing. The cache is keyed by `(layer, expert)` and uses LRU with `popitem(last=False)`. If the working set of experts exceeds the cache limit, the cache will thrash \u2014 evicting experts that were just loaded, then re-reading them on the next call. This is",
+      "final_answer_words": 340,
+      "kind": "Content review required",
+      "status": "failed",
+      "quality_checks": [
+        "Claims must follow the supplied source.",
+        "Judge useful findings and factual errors, not token matches."
+      ],
+      "case": "source_review",
+      "same_final_answer_as_baseline": false,
+      "same_final_answer_as_v012": false,
+      "passed": false,
+      "manual_review": "Partial at the unchanged 512-token cap. Correctly identifies synchronous cache misses, per-call stacking and capacity-driven reloads. Adds a false packed one-bit description relative to v0.1.12, and retains unsupported 397B and dominant-cost claims. The claim that evaluation only pins buffers is unsupported. The old unproved accounting allegation is absent. Content is mixed; this task still fails."
+    }
+  ],
+  "source_files_verified": 53,
+  "candidate_warmup_calls": {
+    "query": 78,
+    "value": 78
+  },
+  "method": {
+    "requests": 16,
+    "prompts": 8,
+    "trials": 2,
+    "new_baseline_runs": 0,
+    "prefill_definition": "New input tokens divided by time to the first token; cached tokens reported separately.",
+    "decode_definition": "Completion tokens after the first token divided by remaining request time."
+  },
+  "decision": "retain_seeded_controller_for_v0.1.13",
+  "incremental_comparison": {
+    "version": "0.1.12",
+    "metrics": {
+      "prefill_tps_fresh_prompts": 85.68761972510418,
+      "decode_tps": 27.000476883699754,
+      "summed_median_request_seconds": 61.4602140620118,
+      "maximum_peak_gib": 395.7365393284708,
+      "cases": [
+        {
+          "input_tokens": 1.0,
+          "cached_tokens_before": 23860.0,
+          "completion_tokens": 512.0,
+          "prefill_seconds": 0.14234854149981402,
+          "decode_seconds": 19.72674187499797,
+          "elapsed_seconds": 19.869090416497784,
+          "case": "source_review",
+          "prefill_tps": 7.025010509161462,
+          "decode_tps": 25.903922869678276
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 108.0,
+          "prefill_seconds": 0.981563396009733,
+          "decode_seconds": 3.9960525000060443,
+          "elapsed_seconds": 4.977615896015777,
+          "case": "merge_intervals",
+          "prefill_tps": 83.54019753930076,
+          "decode_tps": 26.776424984365985
+        },
+        {
+          "input_tokens": 82.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 67.0,
+          "prefill_seconds": 0.9784584169974551,
+          "decode_seconds": 2.5519125620048726,
+          "elapsed_seconds": 3.5303709790023277,
+          "case": "inventory_math",
+          "prefill_tps": 83.80529880015665,
+          "decode_tps": 25.862955095980276
+        },
+        {
+          "input_tokens": 86.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 219.0,
+          "prefill_seconds": 1.0150549995014444,
+          "decode_seconds": 7.7359898959985,
+          "elapsed_seconds": 8.751044895499945,
+          "case": "delivery_reasoning",
+          "prefill_tps": 84.72447309972353,
+          "decode_tps": 28.179974758338574
+        },
+        {
+          "input_tokens": 97.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 117.0,
+          "prefill_seconds": 1.0981450830004178,
+          "decode_seconds": 4.044032375502866,
+          "elapsed_seconds": 5.142177458503284,
+          "case": "invoice_extract",
+          "prefill_tps": 88.33076931417003,
+          "decode_tps": 28.6842411803332
+        },
+        {
+          "input_tokens": 119.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 102.0,
+          "prefill_seconds": 1.3313827285019215,
+          "decode_seconds": 3.6597272505023284,
+          "elapsed_seconds": 4.99110997900425,
+          "case": "incident_summary",
+          "prefill_tps": 89.38075990658177,
+          "decode_tps": 27.597685042276552
+        },
+        {
+          "input_tokens": 73.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 237.0,
+          "prefill_seconds": 0.9051804994815029,
+          "decode_seconds": 8.445482250506757,
+          "elapsed_seconds": 9.35066274998826,
+          "case": "cache_explanation",
+          "prefill_tps": 80.64689864818695,
+          "decode_tps": 27.943934165019318
+        },
+        {
+          "input_tokens": 104.0,
+          "cached_tokens_before": 0.0,
+          "completion_tokens": 99.0,
+          "prefill_seconds": 1.1942160620092181,
+          "decode_seconds": 3.653925625490956,
+          "elapsed_seconds": 4.848141687500174,
+          "case": "maintenance_email",
+          "prefill_tps": 87.08641870468932,
+          "decode_tps": 26.820469282768265
+        }
+      ]
+    },
+    "change_percent": {
+      "decode_tps": 2.515546954773029,
+      "prefill_tps_fresh_prompts": 0.15067499815193397,
+      "summed_median_request_seconds": -3.922802901502742
+    },
+    "same_final_answers": 8,
+    "same_token_sequences": 2
+  },
+  "quality_summary": {
+    "content_behavior_pass": 12,
+    "full_prompt_pass": 12,
+    "total": 16
+  },
+  "launch_environment": {
+    "MLX_MAX_OPS_PER_BUFFER": "100",
+    "MLX_MAX_MB_PER_BUFFER": "2048"
+  },
+  "controller_evidence": {
+    "requests_with_seed_timing": 16,
+    "requests_without_ordinary_probe": 16,
+    "seed_target_seconds_range": [
+      0.0630339999916032,
+      0.09582058401429094
+    ]
+  },
+  "decision_basis": "Decode improves 2.516% and summed request time falls 3.923% versus retained v0.1.12. All twelve previously passing tasks pass. The same source/cache tasks fail: source claims are mixed and the cache comparison explanation improves but remains 187 words. These observed changes are accepted as reasonably close for the measured speed gain; this small prompt suite does not establish general quality.",
+  "tested_runtime_sha256": {
+    "exlr8/static_cache.py": "c81e46a356fd89c4003dd6be7444aa6f7f029d99db2ac53942f01e3c0db9b5f1",
+    "exlr8/prompt_lookup.py": "9440b2c9d76563d008233c800b0621e63e0ae5314e0ef30fd81d0beb540b29c8",
+    "exlr8/dsa_prefill.py": "299bf45f7300debaf65a436e8597c533f0ccd74f4186be08f216077fa4afc937",
+    "exlr8/native_affine.py": "3041a3ad3251257b0d8c3b9ee20595c6994850613323827357e1df7aa50ebe68",
+    "exlr8/dsa_indexed.py": "27c05cea1545ea7c83ae58b7fa87993dc7ff2949bebf4fb2ade91b167f4dacfc",
+    "exlr8/dense.py": "9582572fb137f061bcd84ddf17ae4e1ddcfec23e7684c37bf250b386bdd965bd",
+    "exlr8/fast_prefill.py": "9609dad60f74295f5d4c7ad6347ecff3a4f4886c1056a261e2ec8edf65a6db24",
+    "exlr8/__init__.py": "9a0c54a16d3faf66207e4e9d4b02eb81185a068c3ad7f266d96ab0dc4d7c9806",
+    "exlr8/dsa_prefill_half.py": "48117635388bebbdad3615dbf5593f94371ccc42df1727cb85d34bf9d3f06400",
+    "exlr8/fast_norm.py": "c914982e68b9146e259f7ff23f84b626b2c77ab736dbd0e51ecec95440b13c79",
+    "exlr8/model.py": "253736e4bf055bad0ac1d9d175775ce4f98603965f641ab947476166f5380095",
+    "exlr8/dsa_prefill_splitk.py": "21344d636d2b6e0fa7845950d011b6f8b96cace3a97d1902503c13183f4a8d3d",
+    "exlr8/cli.py": "015ae9fe6fb3272b3cdc1c66c8ed4cf759ee690d74745af56e4ccf0c73c44fe6",
+    "exlr8/mtp.py": "3ad61ccec90e2900d000213d461b254c2063b839a4e456ec056a65f8e748b9c3",
+    "exlr8/fast_decode.py": "a630c4eb9bbca15267729069f7eb7b7088b85aa81901866b15841d3a3a0d3f62",
+    "exlr8/trellis.py": "f182520d6c6e88dbb5413ed14cc32fa64a1b8eb912a97483f0b274dca745e021",
+    "exlr8/joined_mxfp4.py": "bf8105b13de834d08e90916355357f9d52fbd9114b2f79333f4c804bef41dbcf",
+    "exlr8/experts.py": "f9138bd3be6b80ac95fae3afc27f88f4130f82fd9f746f1ba8b68f2631482ca2",
+    "exlr8/kv_lookup.py": "4aeac6567a41c7adf1d36c4a9361e1f677d1f5dab52c472117f354eec5fe90e1",
+    "exlr8/weights.py": "aa0dc27590acf75c2bab29750e29e930a3fdde699faccf6b1ff50295a42ca4f3",
+    "exlr8/fast_cache.py": "d231199bb875420d5fbb3bc31b505b9614ecb1c2f6c49ab5a862895e16cabfa0",
+    "exlr8/__main__.py": "6d8b7d7846a845059d7a3107143f11131f63c5511d669b44085b15ec5e3d2279",
+    "exlr8/dense_trellis.py": "839317246f218fdf663523e13626723bc883dc38372db251166061c613c78c30",
+    "exlr8/metal/residual_rms.metal": "f2621971a355e06ea0787763aecae4dcacb5897a6896afa55ce5224231f6b7fe",
+    "exlr8/metal/fast_decode_linear.metal": "1bfd6faaaded8dd8ee3d43d34b690e77364f2783397308c745006a74e41e0cbf",
+    "exlr8/metal/dsa_indexed_decode.metal": "60d73b1569ecd3b6d2c5ff0efd438f01156fe87ea86ee9fbd8b314e8702e640e",
+    "exlr8/metal/decode.metal": "c3e15dbf6f4dc6b3271a37f37366b24114753f9493783cd1938dd455a5e1ea73",
+    "exlr8/metal/fast_prefill_finish.metal": "2ce98b0e85fe4fa8e8a6de5190745ab1b0020188d55d08854d34468f7d7561bd",
+    "exlr8/metal/kv_lookup_table.metal": "e39475a2a6a73f821a09dafdc2dcabf07eb659a7f1a90997e4ea7cebbf6f3d8f",
+    "exlr8/metal/dsa_prefill_half.metal": "6edcc03fcd6d133af5a19e790f1527a15584a6506aad131cf2e8a8cd0bd52465",
+    "exlr8/metal/dsa_prefill_splitk_pv.metal": "00496c1e24de762cb5352ac5514452fa9a2405a15a0115e1c780b2483719c0b9",
+    "exlr8/metal/dsa_indexed_qk.metal": "6df341c8cd51dc3d4631d813df4c3989902ad73b04fca6e436d5b0e56c084f1e",
+    "exlr8/metal/static_cache_expand.metal": "158962932e1ce03ba4c9b04fc3c8c5a48eda5d4eddf6332ac3c99ac5e1deb23e",
+    "exlr8/metal/fast_decode_gate_finish.metal": "348b2a09509bcee53ae26d9ae8936dc180d6048cca8d269d4f3d7b13e1eaf06d",
+    "exlr8/metal/dense_k4_decode.metal": "b4e49a2e8d14d758f7c4f4f87c8f89e612494620d3d718023e1cd939fb5de674",
+    "exlr8/metal/fast_decode_activation.metal": "3b7859d935cdc2af4a56aed9db06bb4572e9a543e371b6dcfa24418227fe62f8",
+    "exlr8/metal/fast_prefill_prep.metal": "7e4191257b9b14dc698824cd5534fb2b73868cb492406ffa78d46eb7f5be3542",
+    "exlr8/metal/dense_fp8_decode.metal": "28bc686b8cbf0243ed65ec022191972975a245fe1ceab29fa9ed85a74128ae8a",
+    "exlr8/metal/kv_value_shared.metal": "e6ca63f38cb85e1d5c87840c9cb555753cfd6b134133c4513ad55698505052fe",
+    "exlr8/metal/fast_decode_prep.metal": "638f5ab49a11c12fd595cddc18fddba757cd18badb886b02ffbf5b529adc1407",
+    "exlr8/metal/fast_decode_fp8.metal": "3afd7de896ad8acf6ea59a2127108625ae16dede55e5403e50079d7bd07429b9",
+    "exlr8/metal/fast_decode_finish.metal": "08fdff939028342aa75e7c6dd43c0d5da5510c6554934a615cb9d922e762a265",
+    "exlr8/metal/fast_decode_finish_fused.metal": "92e6bdf6dbd88929986368320a601552694dddaeb5c3c4a7a29b9027da6a2837",
+    "exlr8/metal/trellis.metal": "9a6078fae952dcd21717b48a845404522e1464dc1e472125f54c2d0a7d057fba",
+    "exlr8/metal/fast_decode_common.metal": "687ec196f9facf4ad0c6cdf24b9bf0bdb276e003e727b501400a3ff9a90a3d89",
+    "exlr8/metal/dense_fp8_shared.metal": "81cf45ce221b2b6111463ce010b99aa23e134d1c8c8bb3a72d395d78802c37e0",
+    "exlr8/metal/kv_query_shared.metal": "f3db8604e8f1b9983f428b5245593eb15b221951dc14019ab6237e5c909f2060",
+    "exlr8/metal/kv_lookup.metal": "c67e6416c94a832bd281dcfcef19201d014599e97f4f3fc279684431c3d809a8",
+    "exlr8/metal/joined_gate_finish.metal": "a3e7fabe932a8df7e171c47177eb4c27a1ebfc23af688bdea07885242423e177",
+    "exlr8/metal/fast_prefill_gate_finish.metal": "2a85fb75daa0c04783e751169183caec755f342ffea3664783b9c1e56ad091ac",
+    "exlr8/metal/dense_fp4_shared.metal": "20181fa6071aab8fa7a5a754de41b160735d307b1e5e842ff56ef19ea11e8e19",
+    "exlr8/metal/dsa_indexed_pv.metal": "3297a7fd5f8ed814fa7aa1d80b98fcdae1b9aca827b1ee0d724d871aad858b71",
+    "exlr8/metal/fast_prefill.metal": "abdc8715b797e8c6d5757b953b940100eb4489d73fa10c39f9f00f7fd4409479"
+  },
+  "test_evidence": {
+    "passed": 796,
+    "subtests_passed": 23,
+    "skipped": 9,
+    "peak_gib": 1.711596455425024,
+    "log": "/Users/andrewgordon/Documents/ChatGPT/EXLR8 on Mac/artifacts/research/v025-seeded-mtp-tests.log"
+  }
+}

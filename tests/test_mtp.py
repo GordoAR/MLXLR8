@@ -327,7 +327,8 @@ def test_drafting_uses_measured_cost_and_preserves_target_cache(monkeypatch, cap
     assert tokens == expected_tokens(prompt, 40)
     assert_cache(cache, [*prompt, *tokens])
     assert model._mtp_stats["adaptive_drafting"]
-    assert model._mtp_stats["one_token_passes"] >= 1
+    assert model._mtp_stats["seed_target_seconds"] == 1.0
+    assert (model._mtp_stats["one_token_passes"] == 0) == draft_faster
     assert model._mtp_stats["measured_draft_passes"] >= 1
     if draft_faster:
         assert model._mtp_stats["measured_draft_passes"] > 1
@@ -391,9 +392,52 @@ def test_slow_draft_uses_ordinary_pipeline_and_preserves_stream_and_cache(monkey
     assert [row.generation_tokens for row in responses] == list(range(1, len(tokens) + 1))
     assert all(row.prompt_tokens == len(prompt) for row in responses)
     assert_cache(cache, [*prompt, *tokens])
-    assert pipeline_calls
     if ending == "length":
-        assert len(pipeline_calls) == 2
+        assert len(pipeline_calls) == 1
         assert len(tokens) == 40 and responses[-1].finish_reason == "length"
     elif ending == "eos":
+        assert not pipeline_calls
         assert tokens[-1] == 6 and responses[-1].finish_reason == "stop"
+
+
+@pytest.mark.parametrize("cached", [False, True])
+@pytest.mark.parametrize("limit", [1, 2, 20, 80])
+def test_seed_timing_excludes_draft_sync_and_starts_drafting_immediately(monkeypatch, cached, limit):
+    import exlr8.mtp as mtp_module
+
+    monkeypatch.setattr(mtp_module.PromptLookup, "propose", lambda self, limit: [])
+    model = DraftRuntime()
+    cache = model.make_cache()
+    prefix = [1, 2] if cached else []
+    if cached:
+        model.forward_hidden(mx.array([prefix], mx.uint32), cache)
+        model.sync_draft_cache(cache[-1], 128)
+        mx.eval([c.state for c in cache])
+    clock = [0.0]
+    monkeypatch.setattr(mtp_module.time, "perf_counter", lambda: clock[0])
+    forward = model.target.forward_hidden
+    sync = model.sync_draft_cache
+    calls = []
+
+    def target(inputs, target_cache):
+        calls.append(inputs.shape[1])
+        clock[0] += 1.0
+        return forward(inputs, target_cache)
+
+    def slow_sync(*args):
+        clock[0] += 10.0
+        return sync(*args)
+
+    model.target.forward_hidden = target
+    model.sync_draft_cache = slow_sync
+    output = list(stream_generate(model, tokenizer(), [3], max_tokens=limit,
+        prompt_cache=cache, num_draft_tokens=3))
+    actual = [row.token for row in output]
+    assert actual == expected_tokens([*prefix, 3], limit)
+    assert model._mtp_stats["seed_target_seconds"] == 1.0
+    assert_cache(cache, [*prefix, 3, *actual])
+    if limit > 1:
+        assert calls[1] == min(3, limit - 1) + 1
+    if limit <= 2:
+        assert model._mtp_stats["ordinary_decode_seconds"] == 0
+        assert model._mtp_stats["one_token_passes"] == 0
