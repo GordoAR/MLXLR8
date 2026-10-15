@@ -18,7 +18,7 @@ from mlx_lm.models.base import create_attention_mask
 from mlx_lm.models.cache import CacheList, KVCache, trim_prompt_cache
 from mlx_lm.tokenizer_utils import TokenizerWrapper
 
-from .dense import DenseStore
+from .dense import DenseLinear, DenseStore
 from .model import DecoderLayer
 from .prompt_lookup import PromptLookup
 
@@ -39,7 +39,7 @@ class MTPState(CacheList):
 
 
 class MTPRuntime(nn.Module):
-    """Share the target vocabulary and keep a lossless target-state cache."""
+    """Use a smaller draft vocabulary head and keep the target-state cache."""
 
     def __init__(self, target, model_path, expert_store, optimize=True):
         super().__init__()
@@ -60,6 +60,12 @@ class MTPRuntime(nn.Module):
         self.enorm = weights["enorm.weight"]
         self.hnorm = weights["hnorm.weight"]
         self.output_norm = weights["shared_head.norm.weight"]
+        self.draft_head = target.lm_head
+        if (optimize and isinstance(target.lm_head, DenseLinear)
+                and target.lm_head.format == 5 and target.lm_head.shape == (154880, 6144)):
+            from .draft_vocab import DraftVocab
+
+            self.draft_head = DraftVocab(target.lm_head)
         self.freeze()
 
     @property
@@ -99,7 +105,7 @@ class MTPRuntime(nn.Module):
         mask = create_attention_mask(fused, cache[0], return_array=True)
         hidden, _ = self.decoder(fused, mask, cache)
         normalized = mx.fast.rms_norm(hidden, self.output_norm, self.args.rms_norm_eps)
-        return self.target.lm_head(normalized), normalized
+        return self.draft_head(normalized), normalized
 
     def sync_draft_cache(self, state, step_size):
         """Pair h[i] with token[i+1] at draft position i.
