@@ -143,6 +143,12 @@ class DenseLinear(nn.Module):
                 x, self.packed, scales=self.exponents, mode="mxfp8"
             )
         if self.format == 5:
+            if (self.optimize and self.shape == (154880, 6144)
+                    and x.ndim == 3 and x.shape[0] == 1 and x.shape[1] in (1, 4)
+                    and x.shape[2] == 6144 and x.dtype == mx.bfloat16):
+                from .vocab_projection import project
+
+                return project(x, self.packed, self.scales)
             # Apply the F32 row scale after an F32 dot product. No scale rounding.
             result = mx.quantized_matmul(
                 x.astype(mx.float32), self.packed,
