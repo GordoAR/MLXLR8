@@ -343,6 +343,7 @@ class DecoderLayer(nn.Module):
         self.post_norm = weights["post_attention_layernorm.weight"]
         self.experts = experts
         self._expert_finish = None
+        self._routed_finish = None
         self._fused_rms = False
         if args.mlp_layer_types[index] == "dense":
             self.gate_proj = weights["mlp.gate_proj"]
@@ -375,12 +376,28 @@ class DecoderLayer(nn.Module):
         if self.experts is None:
             r = self.down_proj(swiglu(self.gate_proj(x), self.up_proj(x)))
         else:
+            fast_finish = (1 <= x.size // x.shape[-1] <= 4 and a.num_experts_per_tok == 8
+                           and a.n_shared_experts == 1 and getattr(self.experts, "k", None) == 4
+                           and self.experts.store.resident and self.experts.store.optimize)
+            if (fast_finish and x.ndim == 3 and x.shape[0] == 1 and x.shape[2] == 6144
+                    and x.dtype == mx.bfloat16 and a.n_routed_experts == 256
+                    and a.n_group == a.topk_group == 1 and a.norm_topk_prob
+                    and a.routed_scaling_factor == 2.5 and self.bias.shape == (256,)
+                    and self.bias.dtype == mx.float32):
+                from .dense import DenseLinear
+
+                if (isinstance(self.gate, DenseLinear) and self.gate.optimize
+                        and self.gate.format == 6 and self.gate.shape == (256, 6144)
+                        and self.gate.weight.dtype == mx.float32):
+                    if self._routed_finish is None:
+                        from .fast_router import compiled_finish
+
+                        self._routed_finish = compiled_finish(self.experts, self.gate, self.bias)
+                    return self._routed_finish(x, h), topk
             ids, scores = route_experts(self.gate(x.astype(mx.float32)), self.bias, a)
             shared = mx.full(ids.shape[:-1] + (1,), a.n_routed_experts, dtype=mx.uint32)
             indices = mx.concatenate([ids, shared], axis=-1)
-            if (1 <= x.size // x.shape[-1] <= 4 and a.num_experts_per_tok == 8 and a.n_shared_experts == 1
-                    and getattr(self.experts, "k", None) == 4
-                    and self.experts.store.resident and self.experts.store.optimize):
+            if fast_finish:
                 if self._expert_finish is None:
                     from .fast_decode import compiled_expert_mlp_finish
 
