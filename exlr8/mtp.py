@@ -128,13 +128,22 @@ class MTPRuntime(nn.Module):
         self.sync_draft_cache(state, step_size)
 
 
-def _neural_allowed(logprobs, tokens):
-    probabilities = mx.softmax(logprobs[:len(tokens)].astype(mx.float32), axis=-1)
+@mx.compile
+def _neural_allowed_mask(logprobs, tokens):
+    probabilities = mx.softmax(logprobs.astype(mx.float32), axis=-1)
     entropy = -(probabilities * mx.log(probabilities + 1e-5)).sum(axis=-1)
     threshold = mx.minimum(0.03, 0.1 * mx.exp(-entropy))
-    selected = mx.take_along_axis(probabilities,
-        mx.array(tokens, dtype=mx.uint32)[:, None], axis=-1).reshape(-1)
-    return (selected > threshold).tolist()
+    selected = mx.take_along_axis(probabilities, tokens[:, None], axis=-1).reshape(-1)
+    return selected > threshold
+
+
+def _neural_allowed(logprobs, tokens):
+    return _neural_allowed_mask(logprobs[:len(tokens)], mx.array(tokens, mx.uint32)).tolist()
+
+
+def _verification_decisions(predictions, logprobs, tokens):
+    allowed = _neural_allowed_mask(logprobs[:tokens.size], tokens)
+    return mx.concatenate([predictions.astype(mx.uint32), allowed.astype(mx.uint32)])
 
 
 def stream_generate(
@@ -363,11 +372,14 @@ def stream_generate(
                 verify_inputs = mx.array([[pending[-1][0], *draft_tokens]], dtype=mx.uint32)
                 verified_hidden, _ = model.forward_hidden(verify_inputs, cache)
                 predictions, logprobs = sample(model.target.project_hidden(verified_hidden)[0])
-                mx.eval(predictions, logprobs, verified_hidden)
+                decisions = (_verification_decisions(predictions, logprobs, mx.array(draft_tokens, mx.uint32))
+                             if source == "neural" else predictions)
+                mx.eval(decisions, logprobs, verified_hidden)
+                decisions = decisions.tolist()
                 verify_seconds += time.perf_counter() - verify_start
-                predictions = predictions.tolist()
+                predictions = decisions[:n_draft + 1]
+                allowed = [bool(value) for value in decisions[n_draft + 1:]] if source == "neural" else [False] * n_draft
                 accepted = 0
-                allowed = _neural_allowed(logprobs, draft_tokens) if source == "neural" else [False] * n_draft
                 while accepted < n_draft:
                     same = predictions[accepted] == draft_tokens[accepted]
                     plausible = (allowed[accepted] and predictions[accepted] not in control_tokens
