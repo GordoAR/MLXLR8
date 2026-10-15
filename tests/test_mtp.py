@@ -182,6 +182,7 @@ def test_mtp_uses_normalized_target_and_recurrent_states():
     model.target.norm = mx.array([0.7, 1.3])
     model.target.embed_tokens = lambda ids: mx.stack([ids, ids + 1], axis=-1).astype(mx.float32)
     model.target.lm_head = lambda hidden: hidden * 2
+    model.draft_head = lambda hidden: hidden * 3
     model.args = model.target.args
     model.enorm = mx.array([1.1, 0.8])
     model.hnorm = mx.array([0.6, 1.4])
@@ -197,7 +198,8 @@ def test_mtp_uses_normalized_target_and_recurrent_states():
     logits, recurrent = model.draft_step(mx.array([[3]]), expected[:, -1:], draft)
     expected_recurrent = mx.fast.rms_norm(prepared + 0.2, model.output_norm, model.args.rms_norm_eps)
     np.testing.assert_allclose(np.asarray(recurrent), np.asarray(expected_recurrent))
-    np.testing.assert_allclose(np.asarray(logits), np.asarray(expected_recurrent * 2))
+    np.testing.assert_allclose(np.asarray(logits), np.asarray(expected_recurrent * 3))
+    np.testing.assert_allclose(np.asarray(model.target.lm_head(recurrent)), np.asarray(expected_recurrent * 2))
 
 
 def test_first_teacher_row_keeps_h0_and_masks_only_position_zero_embedding():
