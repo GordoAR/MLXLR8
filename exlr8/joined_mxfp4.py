@@ -68,6 +68,25 @@ def _sorted_finish_kernel():
         header=(directory / "fast_decode_common.metal").read_text())
 
 
+@lru_cache(maxsize=8)
+def _ordered_gather_kernel(k, n, count):
+    directory = Path(__file__).with_name("metal")
+    header = f"constant constexpr int INPUT_K={k}, OUTPUT_N={n}, COUNT={count}, BLOCK=64;\n"
+    header += (directory / "joined_gather_order_common.metal").read_text()
+    return mx.fast.metal_kernel(name=f"exlr8_joined_gather_order_{k}_{n}_{count}",
+        input_names=["x", "weights", "scales", "lhs", "ids"], output_names=["out"],
+        header=header, source=(directory / "joined_gather_order.metal").read_text(),
+        compile_options={"math_mode": "safe"})
+
+
+def _gather_ordered(x, packed, lhs, ids):
+    k, n, count = x.shape[-1], packed[0].shape[-2], ids.size
+    return _ordered_gather_kernel(k, n, count)(
+        inputs=[x.reshape(-1, k), packed[0], packed[1], lhs, ids],
+        grid=(32, 2, ((n // 8 + 63) // 64) * 64 * count), threadgroup=(32, 2, 1),
+        output_shapes=[(count, 1, n)], output_dtypes=[mx.float32])[0]
+
+
 def _inner(x, indices, unit, weights, scales, h, m, return_sorted=False):
     slots = indices.shape[-1]
     indices = indices.reshape(-1, slots)
@@ -83,23 +102,33 @@ def _inner(x, indices, unit, weights, scales, h, m, return_sorted=False):
     grouped = ids.size >= 4 * weights["gate_up"][0].shape[0]
     if grouped and rows > 1:
         xh = xh.reshape(rows, h)[lhs].reshape(ids.size, 1, h)
-    gu = mx.gather_qmm(
-        xh, *weights["gate_up"], lhs_indices=None if grouped else lhs,
-        rhs_indices=ids, transpose=True, group_size=32, bits=4,
-        mode="mxfp4", sorted_indices=order is not None,
-    ).reshape(ids.size, 2 * m)
+    ordered = 3 <= rows <= 4 and not grouped and h % 512 == 0 and m % 512 == 0
+    if ordered:
+        gu = _gather_ordered(xh, weights["gate_up"], lhs, ids)
+    else:
+        gu = mx.gather_qmm(
+            xh, *weights["gate_up"], lhs_indices=None if grouped else lhs,
+            rhs_indices=ids, transpose=True, group_size=32, bits=4,
+            mode="mxfp4", sorted_indices=order is not None,
+        )
+    gu = gu.reshape(ids.size, 2 * m)
     hidden = _gate_kernel()(
         inputs=[gu, ids, scales["gate"][1], scales["up"][1], scales["down"][0],
                 decode._dims(m, 0, ids.size, 1)],
         template=[("T", x.dtype)], grid=(m // 128 * 32, ids.size, 1),
         threadgroup=(128, 1, 1), output_shapes=[(ids.size, m)], output_dtypes=[mx.float32],
     )[0]
-    value = mx.gather_qmm(
-        hidden.reshape(ids.size, 1, m), *weights["down"],
-        lhs_indices=None if rows == 1 or grouped else mx.arange(ids.size, dtype=mx.uint32),
-        rhs_indices=ids, transpose=True, group_size=32, bits=4,
-        mode="mxfp4", sorted_indices=order is not None,
-    ).reshape(ids.size, h)
+    if ordered:
+        value = _gather_ordered(hidden.reshape(ids.size, 1, m), weights["down"],
+                                mx.arange(ids.size, dtype=mx.uint32), ids)
+    else:
+        value = mx.gather_qmm(
+            hidden.reshape(ids.size, 1, m), *weights["down"],
+            lhs_indices=None if rows == 1 or grouped else mx.arange(ids.size, dtype=mx.uint32),
+            rhs_indices=ids, transpose=True, group_size=32, bits=4,
+            mode="mxfp4", sorted_indices=order is not None,
+        )
+    value = value.reshape(ids.size, h)
     if return_sorted:
         return value, mx.argsort(order)
     return value if order is None else value[mx.argsort(order)]
