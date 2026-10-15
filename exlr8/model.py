@@ -138,6 +138,7 @@ class Indexer(nn.Module):
         self.args = args
         prefix = "self_attn.indexer."
         self.wq_b = weights[prefix + "wq_b"]
+        self._fused_scores = bool(getattr(self.wq_b, "optimize", False))
         self.wk = weights[prefix + "wk"]
         self.weights_proj = weights[prefix + "weights_proj"]
         self.norm_weight = weights[prefix + "k_norm.weight"]
@@ -159,6 +160,14 @@ class Indexer(nn.Module):
         q = self.rope(q.swapaxes(1, 2), offset=offset)
         head_weights = self.weights_proj(x).astype(mx.float32).swapaxes(1, 2)
         head_weights *= a.index_n_heads**-0.5
+        if (self._fused_scores and batch == 1 and 1 <= length <= 4
+                and a.index_n_heads == 32 and a.index_head_dim == 128
+                and q.dtype == k.dtype == mx.bfloat16
+                and (mask is None or mask.dtype == mx.bool_)):
+            from .indexer_scores import score
+
+            scores = score(q, k, head_weights, mask)
+            return mx.argpartition(-scores, a.index_topk - 1, axis=-1)[..., :a.index_topk]
         q, k = q.astype(mx.float32), k.astype(mx.float32).swapaxes(-1, -2)
         selections = []
         # Bound the index score temporary during long-context prefill.

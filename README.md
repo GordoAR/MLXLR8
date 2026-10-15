@@ -492,3 +492,21 @@ Against v0.1.18, decode rises 2.00%, fresh prefill rises 0.14%, and summed reque
 All sixteen final answers and token sequences match v0.1.18. Twelve meet the full prompt. Both code answers pass 519 cases each; all six JSON and four summary/email answers pass. The same four source/cache answers fail: the source review is incomplete and has unsupported claims; the cache explanation exceeds its 180-word limit.
 
 The Metal suite passed 958 tests and 23 subtests, with nine optional-fixture skips. New checks cover independent decoded weights, partial output tiles, dispatch bounds and F32/BF16 inputs. Warmup confirms the new gate/up and down paths in all 75 target expert layers at three/four rows. All 60 runtime files match the tested source. The 50 tokens/s target remains unmet. See [expert work-order results](docs/expert-work-order-results.json) for per-prompt prefill and decode, answer checks, and source hashes.
+
+
+Version 0.1.20 combines indexer score products, scaling, head weighting and masking in one Metal kernel. The optimized path supports one to four BF16 rows, 32 heads and 128 values per head. It keeps the native head sum and top-2048 selection. Other inputs use the existing path.
+
+The same eight prompts ran twice in forward/reverse order. The comparison uses the documented v0.1.9 and v0.1.19 results.
+
+| Measure | v0.1.9 | v0.1.19 | v0.1.20 |
+| --- | ---: | ---: | ---: |
+| Weighted decode, tokens/s | 24.84690 | 29.50828 | 29.79943 |
+| Fresh-prompt prefill, tokens/s | 85.61777 | 86.01022 | 85.96259 |
+| Summed median request time, seconds | 66.08923 | 55.84527 | 55.37444 |
+| Peak memory, GiB | 392.00723 | 395.69383 | 395.68440 |
+
+Against v0.1.19, decode rises 0.99%, fresh prefill falls 0.06%, and summed request time falls 0.84%. Decode is 19.93% above v0.1.9. Prefill includes time to the first output token; decode excludes that token. Fresh prefill excludes the source review with its saved prefix.
+
+All sixteen answers match v0.1.19. Twelve meet the full prompt. Both code answers pass 519 cases each; all six JSON and four summary/email answers pass. The same four source/cache answers fail: the source review is incomplete and has unsupported claims; the cache explanation exceeds its 180-word limit.
+
+The Metal suite passed 1,004 tests and 23 subtests, with nine optional-fixture skips. The new checks cover independent score products, masks, partial key tiles, noncontiguous inputs, native head sums and dispatch bounds. Warmup confirms the new path in all 21 target indexers at one/two/three/four rows and in the K3 draft indexer. All 62 runtime files match the tested source. The 50 tokens/s target remains unmet. See [fused indexer results](docs/fused-indexer-results.json) for per-prompt speed, answer checks and source hashes.
